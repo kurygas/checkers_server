@@ -1,5 +1,0 @@
-C:/Users/kuryga/CLionProjects/checkers_server/cmake-build-debug/CMakeFiles/checkers_server.dir
-C:/Users/kuryga/CLionProjects/checkers_server/cmake-build-debug/CMakeFiles/edit_cache.dir
-C:/Users/kuryga/CLionProjects/checkers_server/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-C:/Users/kuryga/CLionProjects/checkers_server/cmake-build-debug/CMakeFiles/checkers_server_autogen_timestamp_deps.dir
-C:/Users/kuryga/CLionProjects/checkers_server/cmake-build-debug/CMakeFiles/checkers_server_autogen.dir
