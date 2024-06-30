@@ -1,0 +1,78 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "checkers_server",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "checkers_server::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-checkers_server-Debug-00eee19fb916874c9d95.json",
+					"name" : "checkers_server",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "checkers_server_autogen::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-checkers_server_autogen-Debug-4776e4838a47d5a1aeeb.json",
+					"name" : "checkers_server_autogen",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "checkers_server_autogen_timestamp_deps::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-checkers_server_autogen_timestamp_deps-Debug-89ec1a2d1af93d4f398c.json",
+					"name" : "checkers_server_autogen_timestamp_deps",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "C:/Users/kuryga/CLionProjects/checkers_server/cmake-build-debug",
+		"source" : "C:/Users/kuryga/CLionProjects/checkers_server"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 6
+	}
+}
