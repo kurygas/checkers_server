@@ -22,14 +22,14 @@ void Server::Request() {
     auto requestData = Split(con->readAll().toStdString(), '$');
 
     if (requestData.front() == "login") {
-        LoginUser(std::move(requestData), con);
+        LoginUser(requestData, con);
     }
     else if (requestData.front() == "register") {
-        RegisterUser(std::move(requestData), con);
+        RegisterUser(requestData, con);
     }
 }
 
-void Server::LoginUser(std::vector<std::string>&& requestData, QTcpSocket* con) {
+void Server::LoginUser(const std::vector<std::string>& requestData, QTcpSocket* con) {
     const auto& login = requestData[1];
     const auto& incomingPassword = requestData[2];
     QSqlQuery query(db_);
