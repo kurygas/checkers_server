@@ -1,6 +1,6 @@
 #include "utility_functions.h"
 
-std::vector<std::string> Split(const std::string& str, char splitter) {
+std::vector<std::string> Split(std::string&& str, char splitter) {
     std::vector<std::string> result(1, "");
     for (const auto& c : str) {
         if (c == splitter) {

@@ -20,15 +20,16 @@ void Server::MeetUser() {
 void Server::Request() {
     auto con = reinterpret_cast<QTcpSocket*>(sender());
     auto requestData = Split(con->readAll().toStdString(), '$');
+
     if (requestData.front() == "login") {
-        LoginUser(requestData, con);
+        LoginUser(std::move(requestData), con);
     }
     else if (requestData.front() == "register") {
-        RegisterUser(requestData, con);
+        RegisterUser(std::move(requestData), con);
     }
 }
 
-void Server::LoginUser(const std::vector<std::string>& requestData, QTcpSocket* con) {
+void Server::LoginUser(std::vector<std::string>&& requestData, QTcpSocket* con) {
     const auto& login = requestData[1];
     const auto& incomingPassword = requestData[2];
     QSqlQuery query(db_);
@@ -67,5 +68,5 @@ void Server::RegisterUser(const std::vector<std::string>& requestData, QTcpSocke
 }
 
 void Server::DisconnectUser() {
-    reinterpret_cast<QTcpSocket*>(sender())->deleteLater();
+    delete reinterpret_cast<QTcpSocket*>(sender());
 }

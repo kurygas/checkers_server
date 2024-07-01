@@ -1,4 +1,4 @@
 #include <vector>
 #include <string>
 
-std::vector<std::string> Split(const std::string& str, char splitter);
+std::vector<std::string> Split(std::string&& str, char splitter);
