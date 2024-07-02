@@ -1,8 +1,7 @@
 #include "server.h"
 
 Server::Server()
-: QTcpServer()
-, db_(QSqlDatabase::addDatabase("QSQLITE", "SQLITE")) {
+: db_(QSqlDatabase::addDatabase("QSQLITE", "SQLITE")) {
     listen(QHostAddress::Any, 8080);
     connect(this, &QTcpServer::newConnection, this, &Server::MeetUser);
     db_.setDatabaseName("/C:/Users/kuryga/CLionProjects/checkers_server/db.sqlite");
@@ -19,7 +18,7 @@ void Server::MeetUser() {
 
 void Server::Request() {
     auto con = reinterpret_cast<QTcpSocket*>(sender());
-    auto requestData = Split(con->readAll().toStdString(), '$');
+    auto requestData = Split(con->readAll().toStdString());
 
     if (requestData.front() == "login") {
         LoginUser(requestData, con);
@@ -30,12 +29,13 @@ void Server::Request() {
 }
 
 void Server::LoginUser(const std::vector<std::string>& requestData, QTcpSocket* con) {
+    std::string message;
     const auto& login = requestData[1];
     const auto& incomingPassword = requestData[2];
+
     QSqlQuery query(db_);
     auto queryString = "SELECT nickname, password FROM users WHERE nickname = '" + login + "'";
     query.exec(queryString.c_str());
-    std::string message = "Login doesn't existed";
 
     if (query.next()) {
         auto truePassword = query.value(1).toString().toStdString();
@@ -46,22 +46,33 @@ void Server::LoginUser(const std::vector<std::string>& requestData, QTcpSocket* 
             message = "Wrong Password";
         }
     }
+    else {
+        message = "Login doesn't exist";
+    }
 
     con->write(message.c_str());
 }
 
 void Server::RegisterUser(const std::vector<std::string>& requestData, QTcpSocket* con) {
+    std::string message;
     const auto& login = requestData[1];
     const auto& password = requestData[2];
+
+    if (login.contains('$')) {
+        message = "Login can't contain symbol $";
+    }
+
     QSqlQuery query(db_);
     auto queryString = "SELECT nickname, password FROM users WHERE nickname = '" + login + "'";
     query.exec(queryString.c_str());
-    std::string message = "Login already existed";
 
     if (!query.next()) {
         queryString = "INSERT INTO users (nickname, password) VALUES ('" + login + "', '" + password + "');";
         query.exec(queryString.c_str());
         message = "Success";
+    }
+    else {
+        message = "Login already existed";
     }
 
     con->write(message.c_str());
