@@ -19,5 +19,6 @@ private:
     void LoginUser(const std::vector<std::string>& requestData, QTcpSocket* con);
     void RegisterUser(const std::vector<std::string>& requestData, QTcpSocket* con);
 
-    QSqlDatabase db_;
+    QSqlDatabase database_;
+    std::mutex dbMutex_;
 };

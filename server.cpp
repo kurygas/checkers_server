@@ -1,11 +1,11 @@
 #include "server.h"
 
 Server::Server()
-: db_(QSqlDatabase::addDatabase("QSQLITE", "SQLITE")) {
+: database_(QSqlDatabase::addDatabase("QSQLITE", "SQLITE")) {
     listen(QHostAddress::Any, 8080);
     connect(this, &QTcpServer::newConnection, this, &Server::MeetUser);
-    db_.setDatabaseName("/C:/Users/kuryga/CLionProjects/checkers_server/db.sqlite");
-    db_.open();
+    database_.setDatabaseName("/C:/Users/kuryga/CLionProjects/checkers_server/db.sqlite");
+    database_.open();
 }
 
 void Server::MeetUser() {
@@ -33,7 +33,7 @@ void Server::LoginUser(const std::vector<std::string>& requestData, QTcpSocket* 
     const auto& login = requestData[1];
     const auto& incomingPassword = requestData[2];
 
-    QSqlQuery query(db_);
+    QSqlQuery query(database_);
     auto queryString = "SELECT nickname, password FROM users WHERE nickname = '" + login + "'";
     query.exec(queryString.c_str());
 
@@ -62,7 +62,7 @@ void Server::RegisterUser(const std::vector<std::string>& requestData, QTcpSocke
         message = "Login can't contain symbol $";
     }
 
-    QSqlQuery query(db_);
+    QSqlQuery query(database_);
     auto queryString = "SELECT nickname, password FROM users WHERE nickname = '" + login + "'";
     query.exec(queryString.c_str());
 
