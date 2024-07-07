@@ -18,7 +18,9 @@ add_executable(checkers_server main.cpp
         server.cpp
         server.h
         utility_functions.h
-        utility_functions.cpp)
+        utility_functions.cpp
+        database.cpp
+        database.h)
 target_link_libraries(checkers_server
         Qt::Core
         Qt::Network

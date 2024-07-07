@@ -1,11 +1,8 @@
 #include "server.h"
 
-Server::Server()
-: database_(QSqlDatabase::addDatabase("QSQLITE", "SQLITE")) {
+Server::Server() {
     listen(QHostAddress::Any, 8080);
     connect(this, &QTcpServer::newConnection, this, &Server::MeetUser);
-    database_.setDatabaseName("/C:/Users/kuryga/CLionProjects/checkers_server/db.sqlite");
-    database_.open();
 }
 
 void Server::MeetUser() {
@@ -18,7 +15,7 @@ void Server::MeetUser() {
 
 void Server::Request() {
     auto con = reinterpret_cast<QTcpSocket*>(sender());
-    auto requestData = Split(con->readAll().toStdString());
+    auto requestData = Split(con->readAll());
 
     if (requestData.front() == "login") {
         LoginUser(requestData, con);
@@ -28,54 +25,55 @@ void Server::Request() {
     }
 }
 
-void Server::LoginUser(const std::vector<std::string>& requestData, QTcpSocket* con) {
-    std::string message;
+void Server::LoginUser(const QList<QString>& requestData, QTcpSocket* con) {
+    QString message;
     const auto& login = requestData[1];
     const auto& incomingPassword = requestData[2];
 
-    QSqlQuery query(database_);
-    auto queryString = "SELECT nickname, password FROM users WHERE nickname = '" + login + "'";
-    query.exec(queryString.c_str());
-
-    if (query.next()) {
-        auto truePassword = query.value(1).toString().toStdString();
-        if (truePassword == incomingPassword) {
-            message = "Success";
-        }
-        else {
-            message = "Wrong Password";
-        }
+    if (login.contains('$')) {
+        message = "Login can't contain symbol $";
     }
     else {
-        message = "Login doesn't exist";
+        auto query = database_.GetUsers(login);
+
+        if (query.next()) {
+            auto truePassword = query.value(1).toString();
+            if (truePassword == incomingPassword) {
+                message = "Success";
+            }
+            else {
+                message = "Wrong Password";
+            }
+        }
+        else {
+            message = "Login doesn't exist";
+        }
     }
 
-    con->write(message.c_str());
+    con->write(message.toUtf8());
 }
 
-void Server::RegisterUser(const std::vector<std::string>& requestData, QTcpSocket* con) {
-    std::string message;
+void Server::RegisterUser(const QList<QString>& requestData, QTcpSocket* con) {
+    QString message;
     const auto& login = requestData[1];
     const auto& password = requestData[2];
 
     if (login.contains('$')) {
         message = "Login can't contain symbol $";
     }
-
-    QSqlQuery query(database_);
-    auto queryString = "SELECT nickname, password FROM users WHERE nickname = '" + login + "'";
-    query.exec(queryString.c_str());
-
-    if (!query.next()) {
-        queryString = "INSERT INTO users (nickname, password) VALUES ('" + login + "', '" + password + "');";
-        query.exec(queryString.c_str());
-        message = "Success";
-    }
     else {
-        message = "Login already existed";
+        auto query = database_.GetUsers(login);
+
+        if (!query.next()) {
+            database_.AddUser(login, password);
+            message = "Success";
+        }
+        else {
+            message = "Login already existed";
+        }
     }
 
-    con->write(message.c_str());
+    con->write(message.toUtf8());
 }
 
 void Server::DisconnectUser() {

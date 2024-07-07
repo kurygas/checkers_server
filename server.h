@@ -1,12 +1,8 @@
 #pragma once
 #include <QTcpServer>
 #include <QTcpSocket>
-#include <QSqlDatabase>
-#include <QSqlQuery>
-#include <QDebug>
-#include <QByteArray>
-#include <memory>
 #include "utility_functions.h"
+#include "database.h"
 
 class Server : public QTcpServer {
 public:
@@ -16,9 +12,8 @@ private:
     void MeetUser();
     void Request();
     void DisconnectUser();
-    void LoginUser(const std::vector<std::string>& requestData, QTcpSocket* con);
-    void RegisterUser(const std::vector<std::string>& requestData, QTcpSocket* con);
+    void LoginUser(const QList<QString>& requestData, QTcpSocket* con);
+    void RegisterUser(const QList<QString>& requestData, QTcpSocket* con);
 
-    QSqlDatabase database_;
-    std::mutex dbMutex_;
+    Database database_;
 };

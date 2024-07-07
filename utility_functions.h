@@ -1,27 +1,4 @@
-#include <QTcpSocket>
-#include <vector>
-#include <string>
-#include <thread>
-#include <condition_variable>
-#include <queue>
-#include <mutex>
-#include <functional>
+#include <QString>
+#include <QList>
 
-std::vector<std::string> Split(const std::string& str);
-
-class ThreadPool {
-public:
-    explicit ThreadPool(size_t threadCount);
-    void PushTask(const std::function<void()>& task);
-    void Terminate();
-    ~ThreadPool();
-
-private:
-    void Worker();
-
-    std::mutex mutex_;
-    std::condition_variable cv_;
-    std::queue<std::function<void()>> tasks_;
-    std::vector<std::thread> threads_;
-    bool isActive_ = true;
-};
+QList<QString> Split(const QString& str);
