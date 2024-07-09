@@ -13,9 +13,9 @@ QSqlQuery Database::MakeQuery(const QString& queryString) {
 }
 
 QSqlQuery Database::GetUsers(const QString &login) {
-    return MakeQuery("SELECT nickname, password FROM users WHERE nickname = '" + login + "'");
+    return MakeQuery("SELECT nickname, password, rating FROM users WHERE nickname = '" + login + "'");
 }
 
 void Database::AddUser(const QString &login, const QString &password) {
-    MakeQuery("INSERT INTO users (nickname, password) VALUES ('" + login + "', '" + password + "');");
+    MakeQuery("INSERT INTO users (nickname, password, rating) VALUES ('" + login + "', '" + password + "', 0);");
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include <QTcpServer>
 #include <QTcpSocket>
+#include <QSet>
 #include "utility_functions.h"
 #include "database.h"
 
@@ -9,11 +10,15 @@ public:
     Server();
 
 private:
+    static void Write(QTcpSocket* con, const QList<QString>& data);
+    static QList<QList<QString>> Read(QTcpSocket* con);
+
+
     void MeetUser();
-    void Request();
+    void ReceiveRequest();
     void DisconnectUser();
-    void LoginUser(const QList<QString>& requestData, QTcpSocket* con);
-    void RegisterUser(const QList<QString>& requestData, QTcpSocket* con);
+    void LoginUser(const QList<QString>& request, QTcpSocket* con);
+    void RegisterUser(const QList<QString>& request, QTcpSocket* con);
 
     Database database_;
 };
