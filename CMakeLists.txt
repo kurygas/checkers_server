@@ -17,10 +17,17 @@ find_package(Qt6 COMPONENTS
 add_executable(checkers_server main.cpp
         server.cpp
         server.h
-        utility_functions.h
-        utility_functions.cpp
         database.cpp
-        database.h)
+        database.h
+        query.cpp
+        query.h
+        thread_pool.cpp
+        thread_pool.h
+        connected_users.cpp
+        connected_users.h
+        user.cpp
+        user.h
+)
 target_link_libraries(checkers_server
         Qt::Core
         Qt::Network
