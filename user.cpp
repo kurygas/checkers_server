@@ -33,3 +33,17 @@ void User::AddRatingForSearch(const uint rating) {
     const std::unique_lock<std::shared_mutex> lock(mutex_);
     ratingsForSearch_.push_back(rating);
 }
+
+void User::SetEnemy(QTcpSocket* enemy) {
+    const std::unique_lock<std::shared_mutex> lock(mutex_);
+    enemy_ = enemy;
+}
+
+QTcpSocket* User::GetEnemy() const {
+    const std::shared_lock<std::shared_mutex> lock(mutex_);
+    return enemy_;
+}
+
+void User::ClearRatings() {
+    ratingsForSearch_.clear();
+}

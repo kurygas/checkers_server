@@ -39,7 +39,7 @@ void Server::MeetUser() {
 
 void Server::ReceiveRequest() {
     auto* con = reinterpret_cast<QTcpSocket*>(sender());
-    const auto queries = Read(con);
+    const auto& queries = Read(con);
 
     for (const auto& query : queries) {
         if (query.GetId() == QueryId::Login) {
@@ -71,7 +71,9 @@ void Server::LoginUser(const Query& query, QTcpSocket* con) {
 
         if (truePassword == incomingPassword) {
             response.PushData(QueryId::Ok);
-            response.PushData(static_cast<uint16_t>(users.value(2).toUInt()));
+            const auto& rating = users.value(2).toUInt();
+            response.PushData(rating);
+            users_.LoginUser(con, nickname, rating);
         }
         else {
             response.PushData(QueryId::WrongPassword);
@@ -103,14 +105,11 @@ void Server::RegisterUser(const Query& query, QTcpSocket* con) {
 
 void Server::DisconnectUser() {
     auto con = reinterpret_cast<QTcpSocket*>(sender());
+    auto* enemy = users_.DisconnectUser(con);
 
-    if (connections_.contains(con)) {
-        auto id = connections_[con];
-
-        if (id.has_value()) {
-            Query query(QueryId::EnemyDisconnected);
-            query.push
-        }
+    if (enemy) {
+        const Query response(QueryId::EnemyDisconnected);
+        Write(response, enemy);
     }
 }
 
@@ -123,6 +122,7 @@ void Server::ChangeNickname(const Query& query, QTcpSocket* con) {
     if (!users.next()) {
         response.PushData(QueryId::Ok);
         database_.ChangeNickname(oldNickname, newNickname);
+        users_.ChangeNickname(con, newNickname);
     }
     else {
         response.PushData(QueryId::AlreadyExist);
@@ -131,12 +131,19 @@ void Server::ChangeNickname(const Query& query, QTcpSocket* con) {
     Write(query, con);
 }
 
-void Server::ChangePassword(const Query &query, QTcpSocket *con) {
+void Server::ChangePassword(const Query &query, const QTcpSocket *con) {
     const auto& nickname = query.GetData<QString>(0);
     const auto& newPassword = query.GetData<QString>(1);
     database_.ChangePassword(nickname, newPassword);
 }
 
 void Server::FindGame(const Query& query, QTcpSocket* con) {
+    const auto desiredRating = query.GetData<uint>(0);
+    auto* enemy = users_.FindGame(con, desiredRating);
 
+    if (enemy) {
+        Query response(QueryId::StartGame);
+        Write(response, con);
+        Write(response, enemy);
+    }
 }

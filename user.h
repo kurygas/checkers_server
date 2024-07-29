@@ -12,12 +12,13 @@ public:
     void SetNickname(const QString& nickname);
     void SetRating(uint rating);
     void AddRatingForSearch(uint rating);
+    void ClearRatings();
     void SetEnemy(QTcpSocket* enemy);
 
-    [[nodiscard]] const QString& GetNickname() const;
-    [[nodiscard]] uint GetRating() const;
-    [[nodiscard]] const QList<uint>& GetRatingsForSearch() const;
-    [[nodiscard]] QTcpSocket* GetEnemy() const;
+    const QString& GetNickname() const;
+    uint GetRating() const;
+    const QList<uint>& GetRatingsForSearch() const;
+    QTcpSocket* GetEnemy() const;
 
 private:
     QString nickname_;

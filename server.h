@@ -23,9 +23,9 @@ private:
     void RegisterUser(const Query& query, QTcpSocket* con);
     void FindGame(const Query& query, QTcpSocket* con);
     void ChangeNickname(const Query& query, QTcpSocket* con);
-    void ChangePassword(const Query& query, QTcpSocket* con);
+    void ChangePassword(const Query& query, const QTcpSocket* con);
 
     ThreadPool threadPool_;
     Database database_;
-    Users users_;
+    ConnectedUsers users_;
 };

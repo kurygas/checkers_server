@@ -9,12 +9,14 @@ class ConnectedUsers {
 public:
     void LoginUser(const QTcpSocket* con, const QString& nickname, uint rating);
     void ChangeNickname(const QTcpSocket* con, const QString& newNickname);
-    [[nodiscard]] bool InGame(const QTcpSocket* con) const;
-    QTcpSocket* FindGame(QTcpSocket* con, uint rating);
+    QTcpSocket* GetEnemy(const QTcpSocket* con);
     QTcpSocket* DisconnectUser(const QTcpSocket* con);
-    [[nodiscard]] std::shared_ptr<User> GetPlayerInfo() const;
+    std::shared_ptr<User> GetPlayerInfo(const QTcpSocket* con) const;
+    QTcpSocket* FindGame(QTcpSocket* con, uint rating);
 
 private:
+    void StopSearching(const std::shared_ptr<User>& user);
+
     QMap<const QTcpSocket*, std::shared_ptr<User>> players_;
     mutable std::shared_mutex playersMutex_;
 

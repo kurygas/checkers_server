@@ -16,7 +16,8 @@ enum class QueryId {
     NotExist,
     AlreadyExist,
     Ok,
-    EnemyDisconnected
+    EnemyDisconnected,
+    StartGame
 };
 
 class Query {

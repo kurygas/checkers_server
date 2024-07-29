@@ -7,7 +7,7 @@ ThreadPool::ThreadPool() {
 }
 
 void ThreadPool::PushTask(const std::function<void()>& task) {
-    std::lock_guard<std::mutex> lock(mutex_);
+    const std::lock_guard<std::mutex> lock(mutex_);
     tasks_.push(task);
     cv_.notify_one();
 }
@@ -21,7 +21,7 @@ void ThreadPool::Work() {
             return;
         }
 
-        auto task = tasks_.front();
+        const auto& task = tasks_.front();
         tasks_.pop();
         lock.unlock();
         task();
@@ -30,13 +30,15 @@ void ThreadPool::Work() {
 
 ThreadPool::~ThreadPool() {
     {
-        std::unique_lock<std::mutex> lock(mutex_);
+        const std::unique_lock<std::mutex> lock(mutex_);
         terminated_ = true;
 
         while (!tasks_.empty()) {
             tasks_.pop();
         }
     }
+
+    cv_.notify_all();
 
     for (auto& th : threads_) {
         th.join();
