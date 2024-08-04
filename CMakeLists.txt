@@ -21,12 +21,12 @@ add_executable(checkers_server main.cpp
         database.h
         query.cpp
         query.h
-        thread_pool.cpp
-        thread_pool.h
         connected_users.cpp
         connected_users.h
         user.cpp
         user.h
+        query_handler.cpp
+        query_handler.h
 )
 target_link_libraries(checkers_server
         Qt::Core

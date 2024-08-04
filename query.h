@@ -1,9 +1,9 @@
 #pragma once
-#include <QString>
 #include <QList>
-#include <variant>
+#include <QVariant>
+#include <QDebug>
 
-enum class QueryId {
+enum class QueryId : uint8_t {
     Query = 0,
     String,
     Int,
@@ -17,29 +17,47 @@ enum class QueryId {
     AlreadyExist,
     Ok,
     EnemyDisconnected,
-    StartGame
+    StartGame,
+    CancelSearching
+};
+
+struct Data {
+    enum class DataType {
+        String = 0,
+        Uint,
+        Id
+    };
+
+    DataType type;
+    QVariant var;
 };
 
 class Query {
 public:
     explicit Query(QueryId queryId);
     explicit Query(const QByteArray& bytes);
+    Query(const Query& other);
 
-    void PushData(const std::variant<QString, uint, QueryId>& data);
-
-    template<typename T>
-    [[nodiscard]] const T& GetData(size_t index) const;
-    [[nodiscard]] QByteArray ToBytes() const;
-    [[nodiscard]] size_t Size() const;
-    [[nodiscard]] QueryId GetId() const;
-
-    static uint8_t ToNum(char symbol);
-    static QueryId ToType(char symbol);
+    void PushString(const QString& data);
+    void PushUInt(uint data);
+    void PushId(QueryId data);
+    QByteArray ToBytes() const;
+    QueryId GetId() const;
 
     template<typename T>
-    static char ToChar(T&& data);
+    T GetData(qsizetype index) const {
+        return queryData_[index].var.value<T>();
+    }
+
+    static QueryId ToId(char data);
+
+    template<typename T>
+    static char ToChar(T data) {
+        return static_cast<char>(static_cast<uint8_t>(data));
+    }
+
 
 private:
     QueryId queryId_;
-    QList<std::variant<QString, uint, QueryId>> queryData_;
+    QList<Data> queryData_;
 };

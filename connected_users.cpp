@@ -1,27 +1,35 @@
 #include "connected_users.h"
 
 void ConnectedUsers::LoginUser(const QTcpSocket* con, const QString& nickname, const uint rating) {
-    const std::unique_lock<std::shared_mutex> lock(playersMutex_);
-    players_[con] = std::make_shared<User>(nickname, rating);
+    const QReadLocker lock(&playerMutex_);
+
+    if (players_.contains(con)) {
+        const auto& player = players_[con];
+        player->SetNickname(nickname);
+        player->SetRating(rating);
+    }
 }
 
-void ConnectedUsers::StopSearching(const std::shared_ptr<User>& user) {
+void ConnectedUsers::StopSearching(const QSharedPointer<User>& user) {
+    const QMutexLocker<QRecursiveMutex> lock(&matchmakingMutex_);
+
     for (const auto& rating : user->GetRatingsForSearch()) {
         if (matchmakingPool_.contains(rating)) {
             matchmakingPool_.remove(rating);
         }
     }
+
     user->ClearRatings();
 }
 
 QTcpSocket* ConnectedUsers::FindGame(QTcpSocket* con, const uint rating) {
-    const std::shared_lock<std::shared_mutex> lock1(playersMutex_);
-    const std::unique_lock<std::mutex> lock2(matchmakingMutex_);
+    const QReadLocker lock1(&playerMutex_);
+    const QMutexLocker<QRecursiveMutex> lock2(&matchmakingMutex_);
 
     if (players_.contains(con)) {
         const auto& playerInfo = players_[con];
         playerInfo->AddRatingForSearch(rating);
-        QTcpSocket *enemyCon = nullptr;
+        QTcpSocket* enemyCon = nullptr;
 
         if (matchmakingPool_.contains(rating)) {
             enemyCon = matchmakingPool_[rating];
@@ -44,7 +52,7 @@ QTcpSocket* ConnectedUsers::FindGame(QTcpSocket* con, const uint rating) {
 }
 
 void ConnectedUsers::ChangeNickname(const QTcpSocket* con, const QString& newNickname) {
-    const std::shared_lock<std::shared_mutex> lock(playersMutex_);
+    const QReadLocker lock(&playerMutex_);
 
     if (players_.contains(con)) {
         players_[con]->SetNickname(newNickname);
@@ -52,13 +60,13 @@ void ConnectedUsers::ChangeNickname(const QTcpSocket* con, const QString& newNic
 }
 
 QTcpSocket* ConnectedUsers::GetEnemy(const QTcpSocket* con) {
-    const std::shared_lock<std::shared_mutex> lock(playersMutex_);
+    const QReadLocker lock(&playerMutex_);
     return players_.contains(con) ? players_[con]->GetEnemy() : nullptr;
 }
 
 QTcpSocket* ConnectedUsers::DisconnectUser(const QTcpSocket* con) {
-    const std::unique_lock<std::shared_mutex> lock1(playersMutex_);
-    const std::unique_lock<std::mutex> lock2(matchmakingMutex_);
+    const QWriteLocker lock(&playerMutex_);
+    const QMutexLocker<QRecursiveMutex> lock2(&matchmakingMutex_);
 
     if (players_.contains(con)) {
         const auto& player = players_[con];
@@ -76,7 +84,12 @@ QTcpSocket* ConnectedUsers::DisconnectUser(const QTcpSocket* con) {
     return nullptr;
 }
 
-std::shared_ptr<User> ConnectedUsers::GetPlayerInfo(const QTcpSocket* con) const {
-    const std::shared_lock<std::shared_mutex> lock(playersMutex_);
+QSharedPointer<User> ConnectedUsers::GetPlayerInfo(const QTcpSocket* con) const {
+    const QReadLocker lock(&playerMutex_);
     return players_.contains(con) ? players_[con] : nullptr;
+}
+
+void ConnectedUsers::AddConnection(const QTcpSocket* con) {
+    const QWriteLocker lock(&playerMutex_);
+    players_[con] = QSharedPointer<User>::create();
 }

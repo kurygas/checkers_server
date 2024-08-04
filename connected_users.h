@@ -1,8 +1,8 @@
 #pragma once
 #include <QString>
 #include <QTcpSocket>
-#include <shared_mutex>
-#include <mutex>
+#include <QReadWriteLock>
+#include <QMutex>
 #include "user.h"
 
 class ConnectedUsers {
@@ -11,15 +11,15 @@ public:
     void ChangeNickname(const QTcpSocket* con, const QString& newNickname);
     QTcpSocket* GetEnemy(const QTcpSocket* con);
     QTcpSocket* DisconnectUser(const QTcpSocket* con);
-    std::shared_ptr<User> GetPlayerInfo(const QTcpSocket* con) const;
+    QSharedPointer<User> GetPlayerInfo(const QTcpSocket* con) const;
     QTcpSocket* FindGame(QTcpSocket* con, uint rating);
+    void AddConnection(const QTcpSocket* con);
+    void StopSearching(const QSharedPointer<User> &user);
 
 private:
-    void StopSearching(const std::shared_ptr<User>& user);
-
-    QMap<const QTcpSocket*, std::shared_ptr<User>> players_;
-    mutable std::shared_mutex playersMutex_;
+    QMap<const QTcpSocket*, QSharedPointer<User>> players_;
+    mutable QReadWriteLock playerMutex_;
 
     QMap<const uint, QTcpSocket*> matchmakingPool_;
-    mutable std::mutex matchmakingMutex_;
+    QRecursiveMutex matchmakingMutex_;
 };

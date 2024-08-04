@@ -2,30 +2,26 @@
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QMap>
-#include <shared_mutex>
+#include <QThreadPool>
 #include "database.h"
 #include "query.h"
-#include "thread_pool.h"
 #include "connected_users.h"
+#include "query_handler.h"
 
 class Server : public QTcpServer {
+    Q_OBJECT
 public:
     Server();
 
 private:
-    static void Write(const Query& message, QTcpSocket* con);
-    static QList<Query> Read(QTcpSocket* con);
-
+    void Write(const Query& message, QTcpSocket* con);
+    QList<Query> Read(QTcpSocket* con);
     void MeetUser();
-    void ReceiveRequest();
-    void DisconnectUser();
-    void LoginUser(const Query& query, QTcpSocket* con);
-    void RegisterUser(const Query& query, QTcpSocket* con);
-    void FindGame(const Query& query, QTcpSocket* con);
-    void ChangeNickname(const Query& query, QTcpSocket* con);
-    void ChangePassword(const Query& query, const QTcpSocket* con);
 
-    ThreadPool threadPool_;
     Database database_;
-    ConnectedUsers users_;
+    ConnectedUsers connectedUsers_;
+
+private slots:
+    void DisconnectUser();
+    void ReceiveRequest();
 };

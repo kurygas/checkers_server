@@ -6,15 +6,19 @@ Server::Server() {
 }
 
 void Server::Write(const Query& message, QTcpSocket* con) {
+    const auto& player = connectedUsers_.GetPlayerInfo(con);
     con->write(message.ToBytes());
 }
 
 QList<Query> Server::Read(QTcpSocket* con) {
     QByteArray buffer;
     QList<Query> result;
+    const auto& player = connectedUsers_.GetPlayerInfo(con);
+    const auto& data = con->readAll();
 
-    for (const auto& byte : con->readAll()) {
-        if (Query::ToType(byte) == QueryId::Query) {
+
+    for (const auto& byte : data) {
+        if (Query::ToId(byte) == QueryId::Query) {
             if (!buffer.isEmpty()) {
                 result.emplace_back(buffer);
                 buffer.clear();
@@ -34,78 +38,13 @@ void Server::MeetUser() {
         const auto* con = nextPendingConnection();
         connect(con, &QTcpSocket::readyRead, this, &Server::ReceiveRequest);
         connect(con, &QTcpSocket::disconnected, this, &Server::DisconnectUser);
+        connectedUsers_.AddConnection(con);
     }
-}
-
-void Server::ReceiveRequest() {
-    auto* con = reinterpret_cast<QTcpSocket*>(sender());
-    const auto& queries = Read(con);
-
-    for (const auto& query : queries) {
-        if (query.GetId() == QueryId::Login) {
-            threadPool_.PushTask([this, &query, con]{Server::LoginUser(query, con);});
-        }
-        else if (query.GetId() == QueryId::Register) {
-            threadPool_.PushTask([this, &query, con]{Server::RegisterUser(query, con);});
-        }
-        else if (query.GetId() == QueryId::ChangeNickname) {
-            threadPool_.PushTask([this, &query, con]{Server::ChangeNickname(query, con);});
-        }
-        else if (query.GetId() == QueryId::ChangePassword) {
-            threadPool_.PushTask([this, &query, con]{Server::ChangePassword(query, con);});
-        }
-        else if (query.GetId() == QueryId::FindGame) {
-            threadPool_.PushTask([this, &query, con]{Server::FindGame(query, con);});
-        }
-    }
-}
-
-void Server::LoginUser(const Query& query, QTcpSocket* con) {
-    Query response(QueryId::Login);
-    const auto& nickname = query.GetData<QString>(0);
-    const auto& incomingPassword = query.GetData<QString>(1);
-    auto users = database_.GetUsers(nickname);
-
-    if (users.next()) {
-        auto truePassword = users.value(1).toString();
-
-        if (truePassword == incomingPassword) {
-            response.PushData(QueryId::Ok);
-            const auto& rating = users.value(2).toUInt();
-            response.PushData(rating);
-            users_.LoginUser(con, nickname, rating);
-        }
-        else {
-            response.PushData(QueryId::WrongPassword);
-        }
-    }
-    else {
-        response.PushData(QueryId::NotExist);
-    }
-
-    Write(response, con);
-}
-
-void Server::RegisterUser(const Query& query, QTcpSocket* con) {
-    Query response(QueryId::Register);
-    const auto& nickname = query.GetData<QString>(0);
-    const auto& password = query.GetData<QString>(1);
-    auto users = database_.GetUsers(nickname);
-
-    if (!users.next()) {
-        database_.AddUser(nickname, password);
-        response.PushData(QueryId::Ok);
-    }
-    else {
-        response.PushData(QueryId::AlreadyExist);
-    }
-
-    Write(response, con);
 }
 
 void Server::DisconnectUser() {
     auto con = reinterpret_cast<QTcpSocket*>(sender());
-    auto* enemy = users_.DisconnectUser(con);
+    auto* enemy = connectedUsers_.DisconnectUser(con);
 
     if (enemy) {
         const Query response(QueryId::EnemyDisconnected);
@@ -113,37 +52,13 @@ void Server::DisconnectUser() {
     }
 }
 
-void Server::ChangeNickname(const Query& query, QTcpSocket* con) {
-    const auto& oldNickname = query.GetData<QString>(0);
-    const auto& newNickname = query.GetData<QString>(1);
-    auto users = database_.GetUsers(newNickname);
-    Query response(QueryId::ChangeNickname);
+void Server::ReceiveRequest() {
+    auto* con = reinterpret_cast<QTcpSocket*>(sender());
+    auto queries = Read(con);
 
-    if (!users.next()) {
-        response.PushData(QueryId::Ok);
-        database_.ChangeNickname(oldNickname, newNickname);
-        users_.ChangeNickname(con, newNickname);
-    }
-    else {
-        response.PushData(QueryId::AlreadyExist);
-    }
-
-    Write(query, con);
-}
-
-void Server::ChangePassword(const Query &query, const QTcpSocket *con) {
-    const auto& nickname = query.GetData<QString>(0);
-    const auto& newPassword = query.GetData<QString>(1);
-    database_.ChangePassword(nickname, newPassword);
-}
-
-void Server::FindGame(const Query& query, QTcpSocket* con) {
-    const auto desiredRating = query.GetData<uint>(0);
-    auto* enemy = users_.FindGame(con, desiredRating);
-
-    if (enemy) {
-        Query response(QueryId::StartGame);
-        Write(response, con);
-        Write(response, enemy);
+    for (auto& query : queries) {
+        auto* handler = new QueryHandler(std::move(query), con, database_, connectedUsers_);
+        connect(handler->GetCaller(), &Caller::Processed, this, &Server::Write);
+        QThreadPool::globalInstance()->start(handler);
     }
 }
