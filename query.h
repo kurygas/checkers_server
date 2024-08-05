@@ -4,8 +4,7 @@
 #include <QDebug>
 
 enum class QueryId : uint8_t {
-    Query = 0,
-    String,
+    String = 0,
     Int,
     Login,
     Register,
@@ -41,15 +40,22 @@ public:
     void PushString(const QString& data);
     void PushUInt(uint data);
     void PushId(QueryId data);
+    QString GetString(qsizetype index) const;
+    uint GetUInt(qsizetype index) const;
+    QueryId GetId(qsizetype index) const;
+
     QByteArray ToBytes() const;
-    QueryId GetId() const;
+    QueryId Type() const;
 
     template<typename T>
-    T GetData(qsizetype index) const {
-        return queryData_[index].var.value<T>();
+    static QueryId ToId(T data) {
+        return static_cast<QueryId>(static_cast<uint8_t>(data));
     }
 
-    static QueryId ToId(char data);
+    template<typename T>
+    static uint ToInt(T data) {
+        return static_cast<uint>(static_cast<uint8_t>(data));
+    }
 
     template<typename T>
     static char ToChar(T data) {

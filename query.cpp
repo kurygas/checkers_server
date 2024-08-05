@@ -4,12 +4,12 @@ Query::Query(QueryId queryId)
 : queryId_(queryId) {}
 
 Query::Query(const QByteArray& bytes)
-: queryId_(static_cast<QueryId>(static_cast<uint8_t>(bytes.front()))) {
-    for (int i = 1; i < bytes.size(); ++i) {
-        const auto id = static_cast<QueryId>(static_cast<uint8_t>(bytes[i]));
+: queryId_(ToId(bytes.front())) {
+    for (uint i = 1; i < bytes.size(); ++i) {
+        const auto id = ToId(bytes[i]);
 
         if (id == QueryId::String) {
-            const auto stringSize = static_cast<uint8_t>(bytes[i + 1]);
+            const auto stringSize = ToInt(bytes[i + 1]);
             queryData_.emplace_back(Data::DataType::String, bytes.sliced(i + 2, stringSize));
             i += stringSize + 1;
         }
@@ -17,24 +17,24 @@ Query::Query(const QByteArray& bytes)
             uint result = 0;
 
             for (int j = 0; j < 4; ++j) {
-                const auto byte = static_cast<uint8_t>(bytes[i + j + 1]) << (8 * j);
+                const auto byte = ToInt(bytes[i + j + 1]) << (8 * j);
                 result += byte;
             }
 
             queryData_.emplace_back(Data::DataType::Uint, result);
         }
         else {
-            queryData_.emplace_back(Data::DataType::Id, static_cast<uint8_t>(bytes[i]));
+            queryData_.emplace_back(Data::DataType::Id, ToInt(bytes[i]));
         }
     }
 }
 
-QueryId Query::GetId() const {
+QueryId Query::Type() const {
     return queryId_;
 }
 
 QByteArray Query::ToBytes() const {
-    QByteArray result(1, ToChar(QueryId::Query));
+    QByteArray result;
     result.push_back(ToChar(queryId_));
 
     for (const auto& data : queryData_) {
@@ -43,14 +43,12 @@ QByteArray Query::ToBytes() const {
         }
         else if (data.type == Data::DataType::Uint) {
             auto number = data.var.toUInt();
+            result.push_back(ToChar(QueryId::Int));
 
             for (int i = 0; i < 4; ++i) {
                 result.push_back(ToChar(number & 0xFF));
                 number >>= 8;
             }
-
-            result.push_back(ToChar(number & 0xFF));
-            result.push_back(ToChar(number >> 8));
         }
         else {
             const auto& str = data.var.toString();
@@ -60,6 +58,7 @@ QByteArray Query::ToBytes() const {
         }
     }
 
+    result.push_front(ToChar(result.size()));
     return result;
 }
 
@@ -75,10 +74,6 @@ void Query::PushId(const QueryId data) {
     queryData_.emplace_back(Data::DataType::Id, static_cast<uint>(static_cast<uint8_t>(data)));
 }
 
-QueryId Query::ToId(char data) {
-    return static_cast<QueryId>(static_cast<uint8_t>(data));
-}
-
 Query::Query(const Query& other)
 : queryId_(other.queryId_) {
     for (const auto& data : other.queryData_) {
@@ -89,4 +84,16 @@ Query::Query(const Query& other)
             queryData_.emplace_back(data.type, data.var.toUInt());
         }
     }
+}
+
+QString Query::GetString(qsizetype index) const {
+    return queryData_[index].var.toString();
+}
+
+uint Query::GetUInt(qsizetype index) const {
+    return queryData_[index].var.toUInt();
+}
+
+QueryId Query::GetId(qsizetype index) const {
+    return static_cast<QueryId>(static_cast<uint8_t>(queryData_[index].var.toUInt()));
 }

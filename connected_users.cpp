@@ -69,15 +69,17 @@ QTcpSocket* ConnectedUsers::DisconnectUser(const QTcpSocket* con) {
     const QMutexLocker<QRecursiveMutex> lock2(&matchmakingMutex_);
 
     if (players_.contains(con)) {
-        const auto& player = players_[con];
+        const auto player = players_[con];
         StopSearching(player);
         players_.remove(con);
-        const auto& enemyCon = player->GetEnemy();
-        const auto& enemy = players_[enemyCon];
+        auto* enemyCon = player->GetEnemy();
 
-        if (enemy->GetEnemy() == con) {
-            enemy->SetEnemy(nullptr);
-            return enemyCon;
+        if (enemyCon) {
+            const auto& enemy = players_[enemyCon];
+            if (enemy->GetEnemy() == con) {
+                enemy->SetEnemy(nullptr);
+                return enemyCon;
+            }
         }
     }
 

@@ -13,7 +13,7 @@ struct Caller : public QObject {
 
 class QueryHandler : public QRunnable {
 public:
-    QueryHandler(Query&& query, QTcpSocket* con, Database& database, ConnectedUsers& connectedUsers);
+    QueryHandler(const Query& query, QTcpSocket* con, Database& database, ConnectedUsers& connectedUsers);
     void run() override;
     const Caller* GetCaller() const;
 

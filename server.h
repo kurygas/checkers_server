@@ -10,12 +10,13 @@
 
 class Server : public QTcpServer {
     Q_OBJECT
+
 public:
     Server();
 
 private:
-    void Write(const Query& message, QTcpSocket* con);
-    QList<Query> Read(QTcpSocket* con);
+    static void Write(const Query& message, QTcpSocket* con);
+    static QList<Query> Read(QTcpSocket* con);
     void MeetUser();
 
     Database database_;

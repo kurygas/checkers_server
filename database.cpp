@@ -17,7 +17,6 @@ QSqlQuery Database::MakeQuery(const QString& queryString) {
     }
 
     QSqlQuery query(queryString, database_);
-    query.exec();
 
     if (notChange) {
         mutex_.unlock_shared();

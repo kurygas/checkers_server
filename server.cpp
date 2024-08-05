@@ -6,30 +6,37 @@ Server::Server() {
 }
 
 void Server::Write(const Query& message, QTcpSocket* con) {
-    const auto& player = connectedUsers_.GetPlayerInfo(con);
-    con->write(message.ToBytes());
+    try {
+        con->write(message.ToBytes());
+    }
+    catch (...) {
+        con->disconnectFromHost();
+    }
 }
 
 QList<Query> Server::Read(QTcpSocket* con) {
-    QByteArray buffer;
     QList<Query> result;
-    const auto& player = connectedUsers_.GetPlayerInfo(con);
-    const auto& data = con->readAll();
+    QByteArray data;
 
-
-    for (const auto& byte : data) {
-        if (Query::ToId(byte) == QueryId::Query) {
-            if (!buffer.isEmpty()) {
-                result.emplace_back(buffer);
-                buffer.clear();
-            }
-        }
-        else {
-            buffer.push_back(byte);
-        }
+    try {
+        data = con->readAll();
+    }
+    catch (...) {
+        con->disconnectFromHost();
     }
 
-    result.emplace_back(buffer);
+    for (uint i = 0; i < data.size(); ++i) {
+        QByteArray buffer;
+        const auto querySize = Query::ToInt(data[i]);
+
+        for (uint j = 0; j < querySize; ++j) {
+            buffer.push_back(data[i + j + 1]);
+        }
+
+        result.emplace_back(buffer);
+        i += querySize;
+    }
+
     return result;
 }
 
@@ -43,7 +50,7 @@ void Server::MeetUser() {
 }
 
 void Server::DisconnectUser() {
-    auto con = reinterpret_cast<QTcpSocket*>(sender());
+    const auto* con = reinterpret_cast<QTcpSocket*>(sender());
     auto* enemy = connectedUsers_.DisconnectUser(con);
 
     if (enemy) {
@@ -57,7 +64,7 @@ void Server::ReceiveRequest() {
     auto queries = Read(con);
 
     for (auto& query : queries) {
-        auto* handler = new QueryHandler(std::move(query), con, database_, connectedUsers_);
+        auto* handler = new QueryHandler(query, con, database_, connectedUsers_);
         connect(handler->GetCaller(), &Caller::Processed, this, &Server::Write);
         QThreadPool::globalInstance()->start(handler);
     }

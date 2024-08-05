@@ -1,13 +1,13 @@
 #include "query_handler.h"
 
-QueryHandler::QueryHandler(Query&& query, QTcpSocket* con, Database& database, ConnectedUsers& connectedUsers)
+QueryHandler::QueryHandler(const Query& query, QTcpSocket* con, Database& database, ConnectedUsers& connectedUsers)
 : query_(query)
 , con_(con)
 , database_(database)
 , connectedUsers_(connectedUsers) {}
 
 void QueryHandler::run() {
-    const auto id = query_.GetId();
+    const auto id = query_.Type();
 
     if (id == QueryId::Login) {
         LoginUser();
@@ -30,17 +30,17 @@ void QueryHandler::run() {
 }
 
 void QueryHandler::LoginUser() {
-    auto nickname = query_.GetData<QString>(0);
-    auto incomingPassword = query_.GetData<QString>(1);
+    auto nickname = query_.GetString(0);
+    auto incomingPassword = query_.GetString(1);
     Query response(QueryId::Login);
     auto users = database_.GetUsers(nickname);
 
     if (users.next()) {
-        auto truePassword = users.value(1).toString();
+        const auto truePassword = users.value(1).toString();
 
         if (truePassword == incomingPassword) {
             response.PushId(QueryId::Ok);
-            const auto& rating = users.value(2).toUInt();
+            const auto rating = users.value(2).toUInt();
             response.PushUInt(rating);
             connectedUsers_.LoginUser(con_, nickname, rating);
         }
@@ -56,8 +56,8 @@ void QueryHandler::LoginUser() {
 }
 
 void QueryHandler::RegisterUser() {
-    const auto& nickname = query_.GetData<QString>(0);
-    const auto& password = query_.GetData<QString>(1);
+    const auto nickname = query_.GetString(0);
+    const auto password = query_.GetString(1);
     Query response(QueryId::Register);
     auto users = database_.GetUsers(nickname);
 
@@ -73,7 +73,7 @@ void QueryHandler::RegisterUser() {
 }
 
 void QueryHandler::ChangeNickname() {
-    const auto& newNickname = query_.GetData<QString>(0);
+    const auto newNickname = query_.GetString(0);
     auto users = database_.GetUsers(newNickname);
     Query response(QueryId::ChangeNickname);
 
@@ -90,15 +90,15 @@ void QueryHandler::ChangeNickname() {
 }
 
 void QueryHandler::ChangePassword() {
-    const auto& newPassword = query_.GetData<QString>(0);
+    const auto newPassword = query_.GetString(0);
     database_.ChangePassword(connectedUsers_.GetPlayerInfo(con_)->GetNickname(), newPassword);
 }
 
 void QueryHandler::FindGame() {
-    const auto desiredRating = query_.GetData<uint>(0);
+    const auto desiredRating = query_.GetUInt(0);
     auto* enemyCon = connectedUsers_.FindGame(con_, desiredRating);
-    const auto& player = connectedUsers_.GetPlayerInfo(con_);
-    const auto& enemy = connectedUsers_.GetPlayerInfo(enemyCon);
+    const auto player = connectedUsers_.GetPlayerInfo(con_);
+    const auto enemy = connectedUsers_.GetPlayerInfo(enemyCon);
 
     if (enemyCon) {
         Query responseToEnemy(QueryId::StartGame);
@@ -114,7 +114,7 @@ void QueryHandler::FindGame() {
 }
 
 void QueryHandler::CancelSearching() {
-    const auto& player = connectedUsers_.GetPlayerInfo(con_);
+    const auto player = connectedUsers_.GetPlayerInfo(con_);
     connectedUsers_.StopSearching(player);
 
     if (!player->GetEnemy()) {
