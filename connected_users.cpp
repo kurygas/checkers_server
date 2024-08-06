@@ -27,8 +27,8 @@ QTcpSocket* ConnectedUsers::FindGame(QTcpSocket* con, const uint rating) {
     const QMutexLocker<QRecursiveMutex> lock2(&matchmakingMutex_);
 
     if (players_.contains(con)) {
-        const auto& playerInfo = players_[con];
-        playerInfo->AddRatingForSearch(rating);
+        const auto& player = players_[con];
+        player->AddRatingForSearch(rating);
         QTcpSocket* enemyCon = nullptr;
 
         if (matchmakingPool_.contains(rating)) {
@@ -40,7 +40,7 @@ QTcpSocket* ConnectedUsers::FindGame(QTcpSocket* con, const uint rating) {
 
             if (enemy->GetEnemy() == nullptr) {
                 StopSearching(enemy);
-                StopSearching(playerInfo);
+                StopSearching(player);
                 return enemyCon;
             }
         }
@@ -94,4 +94,12 @@ QSharedPointer<User> ConnectedUsers::GetPlayerInfo(const QTcpSocket* con) const 
 void ConnectedUsers::AddConnection(const QTcpSocket* con) {
     const QWriteLocker lock(&playerMutex_);
     players_[con] = QSharedPointer<User>::create();
+}
+
+void ConnectedUsers::LogoutUser(const QTcpSocket* con) {
+    const QWriteLocker lock(&playerMutex_);
+
+    if (players_.contains(con)) {
+        players_[con] = nullptr;
+    }
 }

@@ -15,6 +15,7 @@ public:
     QTcpSocket* FindGame(QTcpSocket* con, uint rating);
     void AddConnection(const QTcpSocket* con);
     void StopSearching(const QSharedPointer<User> &user);
+    void LogoutUser(const QTcpSocket* con);
 
 private:
     QMap<const QTcpSocket*, QSharedPointer<User>> players_;

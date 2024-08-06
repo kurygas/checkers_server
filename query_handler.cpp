@@ -6,6 +6,10 @@ QueryHandler::QueryHandler(const Query& query, QTcpSocket* con, Database& databa
 , database_(database)
 , connectedUsers_(connectedUsers) {}
 
+const Caller* QueryHandler::GetCaller() const {
+    return &caller_;
+}
+
 void QueryHandler::run() {
     const auto id = query_.Type();
 
@@ -31,14 +35,11 @@ void QueryHandler::run() {
 
 void QueryHandler::LoginUser() {
     auto nickname = query_.GetString(0);
-    auto incomingPassword = query_.GetString(1);
     Query response(QueryId::Login);
     auto users = database_.GetUsers(nickname);
 
     if (users.next()) {
-        const auto truePassword = users.value(1).toString();
-
-        if (truePassword == incomingPassword) {
+        if (users.value(1).toString() == query_.GetString(1)) {
             response.PushId(QueryId::Ok);
             const auto rating = users.value(2).toUInt();
             response.PushUInt(rating);
@@ -57,12 +58,10 @@ void QueryHandler::LoginUser() {
 
 void QueryHandler::RegisterUser() {
     const auto nickname = query_.GetString(0);
-    const auto password = query_.GetString(1);
     Query response(QueryId::Register);
-    auto users = database_.GetUsers(nickname);
 
-    if (!users.next()) {
-        database_.AddUser(nickname, password);
+    if (!database_.GetUsers(nickname).next()) {
+        database_.AddUser(nickname, query_.GetString(1));
         response.PushId(QueryId::Ok);
     }
     else {
@@ -74,10 +73,9 @@ void QueryHandler::RegisterUser() {
 
 void QueryHandler::ChangeNickname() {
     const auto newNickname = query_.GetString(0);
-    auto users = database_.GetUsers(newNickname);
     Query response(QueryId::ChangeNickname);
 
-    if (!users.next()) {
+    if (!database_.GetUsers(newNickname).next()) {
         response.PushId(QueryId::Ok);
         database_.ChangeNickname(connectedUsers_.GetPlayerInfo(con_)->GetNickname(), newNickname);
         connectedUsers_.ChangeNickname(con_, newNickname);
@@ -90,17 +88,35 @@ void QueryHandler::ChangeNickname() {
 }
 
 void QueryHandler::ChangePassword() {
+    const auto nickname = connectedUsers_.GetPlayerInfo(con_)->GetNickname();
     const auto newPassword = query_.GetString(0);
-    database_.ChangePassword(connectedUsers_.GetPlayerInfo(con_)->GetNickname(), newPassword);
+    auto users = database_.GetUsers(nickname);
+    Query response(QueryId::ChangePassword);
+
+    if (users.next()) {
+        if (users.value(1).toString() == newPassword) {
+            response.PushId(QueryId::Same);
+        }
+        else {
+            response.PushId(QueryId::Ok);
+            database_.ChangePassword(nickname, newPassword);
+        }
+    }
+
+    emit caller_.Processed(response, con_);
 }
 
 void QueryHandler::FindGame() {
-    const auto desiredRating = query_.GetUInt(0);
-    auto* enemyCon = connectedUsers_.FindGame(con_, desiredRating);
+    auto* enemyCon = connectedUsers_.FindGame(con_, query_.GetUInt(0));
+
+    if (!enemyCon) {
+        return;
+    }
+
     const auto player = connectedUsers_.GetPlayerInfo(con_);
     const auto enemy = connectedUsers_.GetPlayerInfo(enemyCon);
 
-    if (enemyCon) {
+    if (player && enemy) {
         Query responseToEnemy(QueryId::StartGame);
         responseToEnemy.PushString(player->GetNickname());
         responseToEnemy.PushUInt(player->GetRating());
@@ -115,6 +131,11 @@ void QueryHandler::FindGame() {
 
 void QueryHandler::CancelSearching() {
     const auto player = connectedUsers_.GetPlayerInfo(con_);
+
+    if (!player) {
+        return;
+    }
+
     connectedUsers_.StopSearching(player);
 
     if (!player->GetEnemy()) {
@@ -123,6 +144,6 @@ void QueryHandler::CancelSearching() {
     }
 }
 
-const Caller* QueryHandler::GetCaller() const {
-    return &caller_;
+void QueryHandler::LogoutUser() {
+    connectedUsers_.LogoutUser(con_);
 }

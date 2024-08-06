@@ -5,8 +5,10 @@
 #include "database.h"
 #include "connected_users.h"
 
-struct Caller : public QObject {
+class Caller : public QObject {
     Q_OBJECT
+
+public:
     signals:
     void Processed(Query response, QTcpSocket* con);
 };
@@ -24,6 +26,7 @@ private:
     void ChangeNickname();
     void ChangePassword();
     void CancelSearching();
+    void LogoutUser();
 
     const Query query_;
     QTcpSocket* con_;

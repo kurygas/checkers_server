@@ -17,7 +17,9 @@ enum class QueryId : uint8_t {
     Ok,
     EnemyDisconnected,
     StartGame,
-    CancelSearching
+    CancelSearching,
+    Logout,
+    Same
 };
 
 struct Data {
