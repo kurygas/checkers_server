@@ -1,8 +1,7 @@
 #pragma once
 #include <QSqlDatabase>
 #include <QSqlQuery>
-#include <shared_mutex>
-#include <mutex>
+#include <QReadWriteLock>
 
 class Database {
 public:
@@ -16,5 +15,5 @@ private:
     QSqlQuery MakeQuery(const QString& queryString);
 
     QSqlDatabase database_;
-    std::shared_mutex mutex_;
+    QReadWriteLock mutex_;
 };

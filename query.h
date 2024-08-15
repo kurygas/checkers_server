@@ -1,11 +1,11 @@
 #pragma once
 #include <QList>
 #include <QVariant>
-#include <QDebug>
 
 enum class QueryId : uint8_t {
     String = 0,
     Int,
+    Long,
     Login,
     Register,
     ChangeNickname,
@@ -19,14 +19,17 @@ enum class QueryId : uint8_t {
     StartGame,
     CancelSearching,
     Logout,
-    Same
+    Same,
+    White,
+    Black
 };
 
 struct Data {
     enum class DataType {
         String = 0,
-        Uint,
-        Id
+        Int,
+        Id,
+        Long
     };
 
     DataType type;
@@ -40,10 +43,11 @@ public:
     Query(const Query& other);
 
     void PushString(const QString& data);
-    void PushUInt(uint data);
+    void PushLong(uint data);
     void PushId(QueryId data);
+    void PushInt(uint data);
     QString GetString(qsizetype index) const;
-    uint GetUInt(qsizetype index) const;
+    uint GetInt(qsizetype index) const;
     QueryId GetId(qsizetype index) const;
 
     QByteArray ToBytes() const;
@@ -63,7 +67,6 @@ public:
     static char ToChar(T data) {
         return static_cast<char>(static_cast<uint8_t>(data));
     }
-
 
 private:
     QueryId queryId_;

@@ -1,6 +1,6 @@
 #pragma once
 #include <QRunnable>
-#include <QTcpSocket>
+#include <QRandomGenerator>
 #include "query.h"
 #include "database.h"
 #include "connected_users.h"
@@ -33,4 +33,5 @@ private:
     Database& database_;
     ConnectedUsers& connectedUsers_;
     Caller caller_;
+    QRandomGenerator generator_;
 };

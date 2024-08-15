@@ -25,12 +25,12 @@ QList<Query> Server::Read(QTcpSocket* con) {
         con->disconnectFromHost();
     }
 
-    for (uint i = 0; i < data.size(); ++i) {
+    for (uint i = 0; i < data.size(); i += 2) {
         QByteArray buffer;
-        const auto querySize = Query::ToInt(data[i]);
+        const auto querySize = (Query::ToInt(data[i]) << 8) + Query::ToInt(data[i + 1]);
 
         for (uint j = 0; j < querySize; ++j) {
-            buffer.push_back(data[i + j + 1]);
+            buffer.push_back(data[i + j + 2]);
         }
 
         result.emplace_back(buffer);

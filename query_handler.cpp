@@ -31,6 +31,9 @@ void QueryHandler::run() {
     else if (id == QueryId::CancelSearching) {
         CancelSearching();
     }
+    else if (id == QueryId::Logout) {
+        LogoutUser();
+    }
 }
 
 void QueryHandler::LoginUser() {
@@ -42,7 +45,7 @@ void QueryHandler::LoginUser() {
         if (users.value(1).toString() == query_.GetString(1)) {
             response.PushId(QueryId::Ok);
             const auto rating = users.value(2).toUInt();
-            response.PushUInt(rating);
+            response.PushLong(rating);
             connectedUsers_.LoginUser(con_, nickname, rating);
         }
         else {
@@ -107,25 +110,36 @@ void QueryHandler::ChangePassword() {
 }
 
 void QueryHandler::FindGame() {
-    auto* enemyCon = connectedUsers_.FindGame(con_, query_.GetUInt(0));
+    for (uint i = 1; i <= query_.GetInt(0); ++i) {
+        auto *enemyCon = connectedUsers_.FindGame(con_, query_.GetInt(i));
 
-    if (!enemyCon) {
-        return;
-    }
+        if (!enemyCon) {
+            continue;
+        }
 
-    const auto player = connectedUsers_.GetPlayerInfo(con_);
-    const auto enemy = connectedUsers_.GetPlayerInfo(enemyCon);
+        const auto player = connectedUsers_.GetPlayerInfo(con_);
+        const auto enemy = connectedUsers_.GetPlayerInfo(enemyCon);
 
-    if (player && enemy) {
-        Query responseToEnemy(QueryId::StartGame);
-        responseToEnemy.PushString(player->GetNickname());
-        responseToEnemy.PushUInt(player->GetRating());
-        emit caller_.Processed(responseToEnemy, enemyCon);
+        if (player && enemy) {
+            Query responseToEnemy(QueryId::StartGame);
+            responseToEnemy.PushString(player->GetNickname());
+            responseToEnemy.PushLong(player->GetRating());
+            Query responseToPlayer(QueryId::StartGame);
+            responseToPlayer.PushString(enemy->GetNickname());
+            responseToPlayer.PushLong(enemy->GetRating());
 
-        Query responseToPlayer(QueryId::StartGame);
-        responseToPlayer.PushString(enemy->GetNickname());
-        responseToPlayer.PushUInt(enemy->GetRating());
-        emit caller_.Processed(responseToPlayer, con_);
+            if (generator_.bounded(0, 2) == 0) {
+                responseToEnemy.PushId(QueryId::White);
+                responseToPlayer.PushId(QueryId::Black);
+            }
+            else {
+                responseToEnemy.PushId(QueryId::Black);
+                responseToPlayer.PushId(QueryId::White);
+            }
+
+            emit caller_.Processed(responseToEnemy, enemyCon);
+            emit caller_.Processed(responseToPlayer, con_);
+        }
     }
 }
 

@@ -7,23 +7,15 @@ Database::Database()
 }
 
 QSqlQuery Database::MakeQuery(const QString& queryString) {
-    const bool notChange = queryString.split(' ').front() == "SELECT";
-
-    if (notChange) {
-        mutex_.lock_shared();
+    if (queryString.split(' ').front() == "SELECT") {
+        mutex_.lockForRead();
     }
     else {
-        mutex_.lock();
+        mutex_.lockForWrite();
     }
 
     QSqlQuery query(queryString, database_);
-
-    if (notChange) {
-        mutex_.unlock_shared();
-    }
-    else {
-        mutex_.unlock();
-    }
+    mutex_.unlock();
 
     return query;
 }

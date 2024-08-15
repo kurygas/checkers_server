@@ -1,7 +1,5 @@
 #pragma once
-#include <QString>
 #include <QTcpSocket>
-#include <QReadWriteLock>
 #include <QMutex>
 #include "user.h"
 

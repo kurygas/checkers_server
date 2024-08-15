@@ -36,7 +36,7 @@ QTcpSocket* ConnectedUsers::FindGame(QTcpSocket* con, const uint rating) {
         }
 
         if (enemyCon != nullptr) {
-            auto enemy = players_[enemyCon];
+            const auto& enemy = players_[enemyCon];
 
             if (enemy->GetEnemy() == nullptr) {
                 StopSearching(enemy);
@@ -69,13 +69,14 @@ QTcpSocket* ConnectedUsers::DisconnectUser(const QTcpSocket* con) {
     const QMutexLocker<QRecursiveMutex> lock2(&matchmakingMutex_);
 
     if (players_.contains(con)) {
-        const auto player = players_[con];
+        const auto& player = players_[con];
         StopSearching(player);
-        players_.remove(con);
         auto* enemyCon = player->GetEnemy();
+        players_.remove(con);
 
-        if (enemyCon) {
+        if (enemyCon && players_.contains(enemyCon)) {
             const auto& enemy = players_[enemyCon];
+
             if (enemy->GetEnemy() == con) {
                 enemy->SetEnemy(nullptr);
                 return enemyCon;
