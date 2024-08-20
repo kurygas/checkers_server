@@ -21,7 +21,9 @@ enum class QueryId : uint8_t {
     Logout,
     Same,
     White,
-    Black
+    Black,
+    Move,
+    Win
 };
 
 struct Data {
