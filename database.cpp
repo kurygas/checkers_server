@@ -35,3 +35,7 @@ void Database::ChangeNickname(const QString& oldNickname, const QString& newNick
 void Database::ChangePassword(const QString& nickname, const QString& newPassword) {
     MakeQuery("UPDATE users SET password = '" + newPassword + "' WHERE nickname = '" + nickname + "';");
 }
+
+void Database::UpdateRating(const QString& nickname, const uint newRating) {
+    MakeQuery("UPDATE users SET rating = " + QString::number(newRating) + " WHERE nickname = '" + nickname = "';");
+}

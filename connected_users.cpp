@@ -6,7 +6,7 @@ void ConnectedUsers::LoginUser(const QTcpSocket* con, const QString& nickname, c
     if (players_.contains(con)) {
         const auto& player = players_[con];
         player->SetNickname(nickname);
-        player->SetRating(rating);
+        player->UpdateRating(rating);
     }
 }
 

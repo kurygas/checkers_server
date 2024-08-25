@@ -15,9 +15,9 @@ uint User::GetRating() const {
     return rating_;
 }
 
-void User::SetRating(const uint rating) {
+void User::UpdateRating(const int diff) {
     const QWriteLocker lock(&mutex_);
-    rating_ = rating;
+    rating_ += diff;
 }
 
 QList<uint> User::GetRatingsForSearch() const {

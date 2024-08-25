@@ -23,7 +23,8 @@ enum class QueryId : uint8_t {
     White,
     Black,
     Move,
-    Win
+    Win,
+    Lose
 };
 
 struct Data {

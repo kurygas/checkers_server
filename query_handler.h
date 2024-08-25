@@ -27,6 +27,8 @@ private:
     void ChangePassword();
     void CancelSearching();
     void LogoutUser();
+    void SendMove();
+    void SendMatchResult();
 
     const Query query_;
     QTcpSocket* con_;

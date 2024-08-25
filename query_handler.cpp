@@ -34,6 +34,12 @@ void QueryHandler::run() {
     else if (id == QueryId::Logout) {
         LogoutUser();
     }
+    else if (id == QueryId::Move) {
+        SendMove();
+    }
+    else if (id == QueryId::Win) {
+        SendMatchResult();
+    }
 }
 
 void QueryHandler::LoginUser() {
@@ -121,6 +127,9 @@ void QueryHandler::FindGame() {
         const auto enemy = connectedUsers_.GetPlayerInfo(enemyCon);
 
         if (player && enemy) {
+            player->SetEnemy(enemyCon);
+            enemy->SetEnemy(con_);
+
             Query responseToEnemy(QueryId::StartGame);
             responseToEnemy.PushString(player->GetNickname());
             responseToEnemy.PushLong(player->GetRating());
@@ -160,4 +169,18 @@ void QueryHandler::CancelSearching() {
 
 void QueryHandler::LogoutUser() {
     connectedUsers_.LogoutUser(con_);
+}
+
+void QueryHandler::SendMove() {
+    emit caller_.Processed(query_, connectedUsers_.GetPlayerInfo(con_)->GetEnemy());
+}
+
+void QueryHandler::SendMatchResult() {
+    auto player = connectedUsers_.GetPlayerInfo(con_);
+    player->UpdateRating(50);
+    database_.UpdateRating(player->GetNickname(), player->GetRating());
+    auto enemy = connectedUsers_.GetPlayerInfo(player->GetEnemy());
+    enemy->UpdateRating(-50);
+    database_.UpdateRating(enemy->GetNickname(), enemy->GetRating());
+    emit caller_.Processed(Query(QueryId::Lose), player->GetEnemy());
 }

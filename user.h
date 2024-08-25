@@ -8,7 +8,7 @@
 class User {
 public:
     void SetNickname(const QString& nickname);
-    void SetRating(uint rating);
+    void UpdateRating(int diff);
     void AddRatingForSearch(uint rating);
     void ClearRatings();
     void SetEnemy(QTcpSocket* enemy);
