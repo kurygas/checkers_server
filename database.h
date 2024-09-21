@@ -1,4 +1,5 @@
 #pragma once
+
 #include <QSqlDatabase>
 #include <QSqlQuery>
 #include <QReadWriteLock>
@@ -6,11 +7,12 @@
 class Database {
 public:
     Database();
-    QSqlQuery GetUsers(const QString& nickname);
-    void AddUser(const QString& nickname, const QString& password);
-    void ChangeNickname(const QString& oldNickname, const QString& newNickname);
-    void ChangePassword(const QString& nickname, const QString& newPassword);
-    void UpdateRating(const QString& nickname, uint newRating);
+
+    QSqlQuery getPlayers(const QString& nickname);
+    void addPlayer(const QString& nickname, const QString& password);
+    void changeNickname(const QString& oldNickname, const QString& newNickname);
+    void changePassword(const QString& nickname, const QString& newPassword);
+    void updateRating(const QString& nickname, int newRating);
 
 private:
     QSqlQuery MakeQuery(const QString& queryString);

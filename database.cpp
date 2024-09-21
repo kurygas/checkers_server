@@ -16,26 +16,25 @@ QSqlQuery Database::MakeQuery(const QString& queryString) {
 
     QSqlQuery query(queryString, database_);
     mutex_.unlock();
-
     return query;
 }
 
-QSqlQuery Database::GetUsers(const QString& login) {
-    return MakeQuery("SELECT nickname, password, rating FROM users WHERE nickname = '" + login + "';");
+QSqlQuery Database::getPlayers(const QString& nickname) {
+    return MakeQuery("SELECT nickname, password, rating FROM users WHERE nickname = '" + nickname + "';");
 }
 
-void Database::AddUser(const QString &login, const QString& password) {
-    MakeQuery("INSERT INTO users (nickname, password, rating) VALUES ('" + login + "', '" + password + "', 0);");
+void Database::addPlayer(const QString &nickname, const QString& password) {
+    MakeQuery("INSERT INTO users (nickname, password, rating) VALUES ('" + nickname + "', '" + password + "', 0);");
 }
 
-void Database::ChangeNickname(const QString& oldNickname, const QString& newNickname) {
+void Database::changeNickname(const QString& oldNickname, const QString& newNickname) {
     MakeQuery("UPDATE users SET nickname = '" + newNickname + "' WHERE nickname = '" + oldNickname + "';");
 }
 
-void Database::ChangePassword(const QString& nickname, const QString& newPassword) {
+void Database::changePassword(const QString& nickname, const QString& newPassword) {
     MakeQuery("UPDATE users SET password = '" + newPassword + "' WHERE nickname = '" + nickname + "';");
 }
 
-void Database::UpdateRating(const QString& nickname, const uint newRating) {
-    MakeQuery("UPDATE users SET rating = " + QString::number(newRating) + " WHERE nickname = '" + nickname = "';");
+void Database::updateRating(const QString& nickname, int newRating) {
+    MakeQuery("UPDATE users SET rating = " + QString::number(newRating) + " WHERE nickname = '" + nickname + "';");
 }

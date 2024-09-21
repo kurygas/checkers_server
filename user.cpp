@@ -1,46 +1,63 @@
 #include "user.h"
 
-QString User::GetNickname() const {
+QString Player::getNickname() const {
     const QReadLocker lock(&mutex_);
     return nickname_;
 }
 
-void User::SetNickname(const QString& nickname) {
+void Player::setNickname(const QString& nickname) {
     const QWriteLocker lock(&mutex_);
     nickname_ = nickname;
 }
 
-uint User::GetRating() const {
+int Player::getRating() const {
     const QReadLocker lock(&mutex_);
     return rating_;
 }
 
-void User::UpdateRating(const int diff) {
+void Player::updateRating(const int difference) {
     const QWriteLocker lock(&mutex_);
-    rating_ += diff;
+
+    if (difference < 0 && std::abs(difference) > rating_) {
+        return;
+    }
+
+    rating_ += difference;
 }
 
-QList<uint> User::GetRatingsForSearch() const {
+QList<int> Player::getRatingsForSearch() const {
     const QReadLocker lock(&mutex_);
     return ratingsForSearch_;
 }
 
-void User::AddRatingForSearch(const uint rating) {
+void Player::addRatingForSearch(int rating) {
     const QWriteLocker lock(&mutex_);
     ratingsForSearch_.push_back(rating);
 }
 
-void User::SetEnemy(QTcpSocket* enemy) {
+void Player::setEnemy(QTcpSocket* enemy) {
     const QWriteLocker lock(&mutex_);
     enemy_ = enemy;
 }
 
-QTcpSocket* User::GetEnemy() const {
+QTcpSocket* Player::getEnemyCon() const {
     const QReadLocker lock(&mutex_);
     return enemy_;
 }
 
-void User::ClearRatings() {
+void Player::clearRatingsForSearch() {
     const QWriteLocker lock(&mutex_);
     ratingsForSearch_.clear();
+}
+
+void Player::setRating(int rating) {
+    const QWriteLocker lock(&mutex_);
+    rating_ = rating;
+}
+
+Player::Player(QTcpSocket* playerCon)
+: con_(playerCon) {}
+
+QTcpSocket* Player::getPlayerCon() {
+    return con_;
 }

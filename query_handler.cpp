@@ -1,186 +1,209 @@
 #include "query_handler.h"
 
-QueryHandler::QueryHandler(const Query& query, QTcpSocket* con, Database& database, ConnectedUsers& connectedUsers)
+QueryHandler::QueryHandler(const Query& query, QTcpSocket* playerCon, Database& database, ConnectedPlayers& connectedPlayers)
 : query_(query)
-, con_(con)
+, playerCon_(playerCon)
 , database_(database)
-, connectedUsers_(connectedUsers) {}
+, connectedPlayers_(connectedPlayers) {}
 
-const Caller* QueryHandler::GetCaller() const {
+const Caller* QueryHandler::getCaller() const {
     return &caller_;
 }
 
 void QueryHandler::run() {
-    const auto id = query_.Type();
+    const auto id = query_.getType();
 
     if (id == QueryId::Login) {
-        LoginUser();
+        loginUser();
     }
     else if (id == QueryId::Register) {
-        RegisterUser();
+        registerUser();
     }
     else if (id == QueryId::ChangeNickname) {
-        ChangeNickname();
+        changeNickname();
     }
     else if (id == QueryId::ChangePassword) {
-        ChangePassword();
+        changePassword();
     }
     else if (id == QueryId::FindGame) {
-        FindGame();
+        findGame();
     }
     else if (id == QueryId::CancelSearching) {
-        CancelSearching();
+        cancelSearching();
     }
     else if (id == QueryId::Logout) {
-        LogoutUser();
+        logoutUser();
     }
     else if (id == QueryId::Move) {
-        SendMove();
+        sendMove();
     }
     else if (id == QueryId::Win) {
-        SendMatchResult();
+        sendMatchResult();
+    }
+    else if (id == QueryId::EnemyDisconnected) {
+        enemyDisconnected(playerCon_);
     }
 }
 
-void QueryHandler::LoginUser() {
-    auto nickname = query_.GetString(0);
+void QueryHandler::loginUser() {
+    auto nickname = query_.getString(0);
     Query response(QueryId::Login);
-    auto users = database_.GetUsers(nickname);
+    auto users = database_.getPlayers(nickname);
 
     if (users.next()) {
-        if (users.value(1).toString() == query_.GetString(1)) {
-            response.PushId(QueryId::Ok);
-            const auto rating = users.value(2).toUInt();
-            response.PushLong(rating);
-            connectedUsers_.LoginUser(con_, nickname, rating);
+        auto* sameNicknameCon = connectedPlayers_.findConnection(nickname);
+
+        if (sameNicknameCon) {
+            emit caller_.disconnect(sameNicknameCon);
+        }
+
+        if (users.value(1).toString() == query_.getString(1)) {
+            response.pushId(QueryId::Ok);
+            const auto rating = users.value(2).toInt();
+            response.pushInt(rating);
+            connectedPlayers_.loginPlayer(playerCon_, nickname, rating);
         }
         else {
-            response.PushId(QueryId::WrongPassword);
+            response.pushId(QueryId::WrongPassword);
         }
     }
     else {
-        response.PushId(QueryId::NotExist);
+        response.pushId(QueryId::NotExist);
     }
 
-    emit caller_.Processed(response, con_);
+    emit caller_.processed(response, playerCon_);
 }
 
-void QueryHandler::RegisterUser() {
-    const auto nickname = query_.GetString(0);
+void QueryHandler::registerUser() {
+    const auto nickname = query_.getString(0);
     Query response(QueryId::Register);
 
-    if (!database_.GetUsers(nickname).next()) {
-        database_.AddUser(nickname, query_.GetString(1));
-        response.PushId(QueryId::Ok);
+    if (!database_.getPlayers(nickname).next()) {
+        database_.addPlayer(nickname, query_.getString(1));
+        response.pushId(QueryId::Ok);
     }
     else {
-        response.PushId(QueryId::AlreadyExist);
+        response.pushId(QueryId::AlreadyExist);
     }
 
-    emit caller_.Processed(response, con_);
+    emit caller_.processed(response, playerCon_);
 }
 
-void QueryHandler::ChangeNickname() {
-    const auto newNickname = query_.GetString(0);
+void QueryHandler::changeNickname() {
+    const auto newNickname = query_.getString(0);
     Query response(QueryId::ChangeNickname);
 
-    if (!database_.GetUsers(newNickname).next()) {
-        response.PushId(QueryId::Ok);
-        database_.ChangeNickname(connectedUsers_.GetPlayerInfo(con_)->GetNickname(), newNickname);
-        connectedUsers_.ChangeNickname(con_, newNickname);
+    if (!database_.getPlayers(newNickname).next()) {
+        response.pushId(QueryId::Ok);
+        database_.changeNickname(connectedPlayers_.getPlayerInfo(playerCon_)->getNickname(), newNickname);
+        connectedPlayers_.changeNickname(playerCon_, newNickname);
     }
     else {
-        response.PushId(QueryId::AlreadyExist);
+        response.pushId(QueryId::AlreadyExist);
     }
 
-    emit caller_.Processed(response, con_);
+    emit caller_.processed(response, playerCon_);
 }
 
-void QueryHandler::ChangePassword() {
-    const auto nickname = connectedUsers_.GetPlayerInfo(con_)->GetNickname();
-    const auto newPassword = query_.GetString(0);
-    auto users = database_.GetUsers(nickname);
+void QueryHandler::changePassword() {
+    const auto nickname = connectedPlayers_.getPlayerInfo(playerCon_)->getNickname();
+    const auto newPassword = query_.getString(0);
+    auto users = database_.getPlayers(nickname);
     Query response(QueryId::ChangePassword);
 
     if (users.next()) {
         if (users.value(1).toString() == newPassword) {
-            response.PushId(QueryId::Same);
+            response.pushId(QueryId::Same);
         }
         else {
-            response.PushId(QueryId::Ok);
-            database_.ChangePassword(nickname, newPassword);
+            response.pushId(QueryId::Ok);
+            database_.changePassword(nickname, newPassword);
         }
     }
 
-    emit caller_.Processed(response, con_);
+    emit caller_.processed(response, playerCon_);
 }
 
-void QueryHandler::FindGame() {
-    for (uint i = 1; i <= query_.GetInt(0); ++i) {
-        auto *enemyCon = connectedUsers_.FindGame(con_, query_.GetInt(i));
+void QueryHandler::findGame() {
+    for (auto i = 1; i <= query_.getInt(0); ++i) {
+        auto* enemyCon = connectedPlayers_.findGame(playerCon_, query_.getInt(i));
 
         if (!enemyCon) {
             continue;
         }
 
-        const auto player = connectedUsers_.GetPlayerInfo(con_);
-        const auto enemy = connectedUsers_.GetPlayerInfo(enemyCon);
+        const auto player = connectedPlayers_.getPlayerInfo(playerCon_);
+        const auto enemy = connectedPlayers_.getPlayerInfo(enemyCon);
 
         if (player && enemy) {
-            player->SetEnemy(enemyCon);
-            enemy->SetEnemy(con_);
+            player->setEnemy(enemyCon);
+            enemy->setEnemy(playerCon_);
 
             Query responseToEnemy(QueryId::StartGame);
-            responseToEnemy.PushString(player->GetNickname());
-            responseToEnemy.PushLong(player->GetRating());
+            responseToEnemy.pushString(enemy->getNickname());
+            responseToEnemy.pushInt(enemy->getRating());
             Query responseToPlayer(QueryId::StartGame);
-            responseToPlayer.PushString(enemy->GetNickname());
-            responseToPlayer.PushLong(enemy->GetRating());
+            responseToPlayer.pushString(player->getNickname());
+            responseToPlayer.pushInt(player->getRating());
 
             if (generator_.bounded(0, 2) == 0) {
-                responseToEnemy.PushId(QueryId::White);
-                responseToPlayer.PushId(QueryId::Black);
+                responseToEnemy.pushId(QueryId::White);
+                responseToPlayer.pushId(QueryId::Black);
             }
             else {
-                responseToEnemy.PushId(QueryId::Black);
-                responseToPlayer.PushId(QueryId::White);
+                responseToEnemy.pushId(QueryId::Black);
+                responseToPlayer.pushId(QueryId::White);
             }
 
-            emit caller_.Processed(responseToEnemy, enemyCon);
-            emit caller_.Processed(responseToPlayer, con_);
+            emit caller_.processed(responseToEnemy, enemyCon);
+            emit caller_.processed(responseToPlayer, playerCon_);
         }
     }
 }
 
-void QueryHandler::CancelSearching() {
-    const auto player = connectedUsers_.GetPlayerInfo(con_);
+void QueryHandler::cancelSearching() {
+    const auto player = connectedPlayers_.getPlayerInfo(playerCon_);
 
     if (!player) {
         return;
     }
 
-    connectedUsers_.StopSearching(player);
+    connectedPlayers_.stopSearching(player);
 
-    if (!player->GetEnemy()) {
+    if (!player->getEnemyCon()) {
         Query response(QueryId::CancelSearching);
-        emit caller_.Processed(response, con_);
+        emit caller_.processed(response, playerCon_);
     }
 }
 
-void QueryHandler::LogoutUser() {
-    connectedUsers_.LogoutUser(con_);
+void QueryHandler::logoutUser() {
+    connectedPlayers_.logoutPlayer(playerCon_);
 }
 
-void QueryHandler::SendMove() {
-    emit caller_.Processed(query_, connectedUsers_.GetPlayerInfo(con_)->GetEnemy());
+void QueryHandler::sendMove() {
+    emit caller_.processed(query_, connectedPlayers_.getPlayerInfo(playerCon_)->getEnemyCon());
 }
 
-void QueryHandler::SendMatchResult() {
-    auto player = connectedUsers_.GetPlayerInfo(con_);
-    player->UpdateRating(50);
-    database_.UpdateRating(player->GetNickname(), player->GetRating());
-    auto enemy = connectedUsers_.GetPlayerInfo(player->GetEnemy());
-    enemy->UpdateRating(-50);
-    database_.UpdateRating(enemy->GetNickname(), enemy->GetRating());
-    emit caller_.Processed(Query(QueryId::Lose), player->GetEnemy());
+void QueryHandler::sendMatchResult() {
+    auto player = connectedPlayers_.getPlayerInfo(playerCon_);
+    player->updateRating(50);
+    database_.updateRating(player->getNickname(), player->getRating());
+    auto enemy = connectedPlayers_.getPlayerInfo(player->getEnemyCon());
+    enemy->updateRating(-50);
+    database_.updateRating(enemy->getNickname(), enemy->getRating());
+    emit caller_.processed(Query(QueryId::Lose), player->getEnemyCon());
+}
+
+void QueryHandler::enemyDisconnected(QTcpSocket* playerCon) {
+    auto player = connectedPlayers_.getPlayerInfo(playerCon);
+    auto* enemyCon = connectedPlayers_.disconnectPlayer(playerCon_);
+
+    if (enemyCon) {
+        player->updateRating(-50);
+        database_.updateRating(player->getNickname(), player->getRating());
+        auto enemy = connectedPlayers_.getPlayerInfo(enemyCon);
+        enemy->updateRating(50);
+        database_.updateRating(enemy->getNickname(), enemy->getRating());
+        emit caller_.processed(Query(QueryId::EnemyDisconnected), enemyCon);
+    }
 }

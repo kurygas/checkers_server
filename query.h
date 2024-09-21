@@ -1,11 +1,12 @@
 #pragma once
+
 #include <QList>
 #include <QVariant>
 
 enum class QueryId : uint8_t {
     String = 0,
+    Short,
     Int,
-    Long,
     Login,
     Register,
     ChangeNickname,
@@ -30,13 +31,13 @@ enum class QueryId : uint8_t {
 struct Data {
     enum class DataType {
         String = 0,
-        Int,
+        Short,
         Id,
-        Long
+        Int
     };
 
-    DataType type;
-    QVariant var;
+    DataType dataType;
+    QVariant variant;
 };
 
 class Query {
@@ -45,29 +46,29 @@ public:
     explicit Query(const QByteArray& bytes);
     Query(const Query& other);
 
-    void PushString(const QString& data);
-    void PushLong(uint data);
-    void PushId(QueryId data);
-    void PushInt(uint data);
-    QString GetString(qsizetype index) const;
-    uint GetInt(qsizetype index) const;
-    QueryId GetId(qsizetype index) const;
+    void pushString(const QString& data);
+    void pushInt(int data);
+    void pushId(QueryId data);
+    void pushShort(int data);
 
-    QByteArray ToBytes() const;
-    QueryId Type() const;
+    QString getString(int index) const;
+    int getInt(int index) const;
+    QueryId getId(int index) const;
+    QByteArray toBytes() const;
+    QueryId getType() const;
 
     template<typename T>
-    static QueryId ToId(T data) {
+    static QueryId toId(T data) {
         return static_cast<QueryId>(static_cast<uint8_t>(data));
     }
 
     template<typename T>
-    static uint ToInt(T data) {
-        return static_cast<uint>(static_cast<uint8_t>(data));
+    static int toInt(T data) {
+        return static_cast<int>(static_cast<uint8_t>(data));
     }
 
     template<typename T>
-    static char ToChar(T data) {
+    static char toChar(T data) {
         return static_cast<char>(static_cast<uint8_t>(data));
     }
 

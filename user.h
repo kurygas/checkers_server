@@ -1,27 +1,33 @@
 #pragma once
+
 #include <QString>
 #include <QList>
 #include <QTcpSocket>
 #include <QSharedData>
 #include <QReadWriteLock>
 
-class User {
+class Player {
 public:
-    void SetNickname(const QString& nickname);
-    void UpdateRating(int diff);
-    void AddRatingForSearch(uint rating);
-    void ClearRatings();
-    void SetEnemy(QTcpSocket* enemy);
+    explicit Player(QTcpSocket* playerCon);
 
-    QString GetNickname() const;
-    uint GetRating() const;
-    QList<uint> GetRatingsForSearch() const;
-    QTcpSocket* GetEnemy() const;
+    void setNickname(const QString& nickname);
+    void updateRating(int difference);
+    void setRating(int rating);
+    void addRatingForSearch(int rating);
+    void clearRatingsForSearch();
+    void setEnemy(QTcpSocket* enemy);
+    QTcpSocket* getPlayerCon();
+
+    QString getNickname() const;
+    int getRating() const;
+    QList<int> getRatingsForSearch() const;
+    QTcpSocket* getEnemyCon() const;
 
 private:
+    QTcpSocket* con_;
     QString nickname_;
-    uint rating_;
-    QList<uint> ratingsForSearch_;
+    int rating_ = 0;
+    QList<int> ratingsForSearch_;
     QTcpSocket* enemy_ = nullptr;
     mutable QReadWriteLock mutex_;
 };

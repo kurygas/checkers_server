@@ -1,7 +1,9 @@
 #pragma once
+
 #include <QTcpServer>
 #include <QMap>
 #include <QThreadPool>
+
 #include "database.h"
 #include "query.h"
 #include "connected_users.h"
@@ -14,13 +16,16 @@ public:
     Server();
 
 private:
-    static void Write(const Query& message, QTcpSocket* con);
-    static QList<Query> Read(QTcpSocket* con);
+    static void writeMessage(const Query& message, QTcpSocket* playerCon);
+    static QList<Query> readMessage(QTcpSocket* playerCon);
+    static void disconnectPlayer(QTcpSocket* playerCon);
 
-    void MeetUser();
-    void DisconnectUser();
-    void ReceiveRequest();
+    void meetPlayer();
+    void catchDisconnection();
+    void receiveRequest();
+
+    void startTask(const Query& query, QTcpSocket* playerCon);
 
     Database database_;
-    ConnectedUsers connectedUsers_;
+    ConnectedPlayers connectedPlayers_;
 };

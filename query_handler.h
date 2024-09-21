@@ -1,6 +1,8 @@
 #pragma once
+
 #include <QRunnable>
 #include <QRandomGenerator>
+
 #include "query.h"
 #include "database.h"
 #include "connected_users.h"
@@ -10,30 +12,33 @@ class Caller : public QObject {
 
 public:
     signals:
-    void Processed(Query response, QTcpSocket* con);
+    void disconnect(QTcpSocket* con);
+    void processed(Query response, QTcpSocket* con);
 };
 
 class QueryHandler : public QRunnable {
 public:
-    QueryHandler(const Query& query, QTcpSocket* con, Database& database, ConnectedUsers& connectedUsers);
+    QueryHandler(const Query& query, QTcpSocket* playerCon, Database& database, ConnectedPlayers& connectedPlayers);
+
     void run() override;
-    const Caller* GetCaller() const;
+    const Caller* getCaller() const;
 
 private:
-    void LoginUser();
-    void RegisterUser();
-    void FindGame();
-    void ChangeNickname();
-    void ChangePassword();
-    void CancelSearching();
-    void LogoutUser();
-    void SendMove();
-    void SendMatchResult();
+    void loginUser();
+    void registerUser();
+    void findGame();
+    void changeNickname();
+    void changePassword();
+    void cancelSearching();
+    void logoutUser();
+    void sendMove();
+    void sendMatchResult();
+    void enemyDisconnected(QTcpSocket* playerCon);
 
     const Query query_;
-    QTcpSocket* con_;
+    QTcpSocket* playerCon_;
     Database& database_;
-    ConnectedUsers& connectedUsers_;
+    ConnectedPlayers& connectedPlayers_;
     Caller caller_;
     QRandomGenerator generator_;
 };

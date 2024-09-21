@@ -2,34 +2,34 @@
 
 Server::Server() {
     listen(QHostAddress::Any, 8080);
-    connect(this, &QTcpServer::newConnection, this, &Server::MeetUser);
+    connect(this, &QTcpServer::newConnection, this, &Server::meetPlayer);
 }
 
-void Server::Write(const Query& message, QTcpSocket* con) {
+void Server::writeMessage(const Query& message, QTcpSocket* playerCon) {
     try {
-        con->write(message.ToBytes());
+        playerCon->write(message.toBytes());
     }
     catch (...) {
-        con->disconnectFromHost();
+        playerCon->disconnectFromHost();
     }
 }
 
-QList<Query> Server::Read(QTcpSocket* con) {
+QList<Query> Server::readMessage(QTcpSocket* playerCon) {
     QList<Query> result;
     QByteArray data;
 
     try {
-        data = con->readAll();
+        data = playerCon->readAll();
     }
     catch (...) {
-        con->disconnectFromHost();
+        playerCon->disconnectFromHost();
     }
 
-    for (uint i = 0; i < data.size(); i += 2) {
+    for (auto i = 0; i < data.size(); i += 2) {
         QByteArray buffer;
-        const auto querySize = (Query::ToInt(data[i]) << 8) + Query::ToInt(data[i + 1]);
+        const auto querySize = (Query::toInt(data[i]) << 8) + Query::toInt(data[i + 1]);
 
-        for (uint j = 0; j < querySize; ++j) {
+        for (auto j = 0; j < querySize; ++j) {
             buffer.push_back(data[i + j + 2]);
         }
 
@@ -40,32 +40,35 @@ QList<Query> Server::Read(QTcpSocket* con) {
     return result;
 }
 
-void Server::MeetUser() {
+void Server::catchDisconnection() {
+    startTask(Query(QueryId::EnemyDisconnected), reinterpret_cast<QTcpSocket*>(sender()));
+}
+
+void Server::meetPlayer() {
     while (hasPendingConnections()) {
-        const auto* con = nextPendingConnection();
-        connect(con, &QTcpSocket::readyRead, this, &Server::ReceiveRequest);
-        connect(con, &QTcpSocket::disconnected, this, &Server::DisconnectUser);
-        connectedUsers_.AddConnection(con);
+        auto* con = nextPendingConnection();
+        connect(con, &QTcpSocket::readyRead, this, &Server::receiveRequest);
+        connect(con, &QTcpSocket::disconnected, this, &Server::catchDisconnection);
+        connectedPlayers_.addConnection(con);
     }
 }
 
-void Server::DisconnectUser() {
-    const auto* con = reinterpret_cast<QTcpSocket*>(sender());
-    auto* enemy = connectedUsers_.DisconnectUser(con);
-
-    if (enemy) {
-        const Query response(QueryId::EnemyDisconnected);
-        Write(response, enemy);
-    }
-}
-
-void Server::ReceiveRequest() {
+void Server::receiveRequest() {
     auto* con = reinterpret_cast<QTcpSocket*>(sender());
-    auto queries = Read(con);
+    auto queries = readMessage(con);
 
     for (auto& query : queries) {
-        auto* handler = new QueryHandler(query, con, database_, connectedUsers_);
-        connect(handler->GetCaller(), &Caller::Processed, this, &Server::Write);
-        QThreadPool::globalInstance()->start(handler);
+        startTask(query, con);
     }
+}
+
+void Server::startTask(const Query& query, QTcpSocket* playerCon) {
+    auto* handler = new QueryHandler(query, playerCon, database_, connectedPlayers_);
+    connect(handler->getCaller(), &Caller::processed, this, &Server::writeMessage);
+    connect(handler->getCaller(), &Caller::disconnect, this, &Server::disconnectPlayer);
+    QThreadPool::globalInstance()->start(handler);
+}
+
+void Server::disconnectPlayer(QTcpSocket* playerCon) {
+    playerCon->disconnectFromHost();
 }
