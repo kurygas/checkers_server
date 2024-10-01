@@ -23,8 +23,8 @@ add_executable(checkers_server main.cpp
         query.h
         connected_users.cpp
         connected_users.h
-        user.cpp
-        user.h
+        player.cpp
+        player.h
         query_handler.cpp
         query_handler.h
 )

@@ -2,7 +2,7 @@
 
 Database::Database()
 : database_(QSqlDatabase::addDatabase("QSQLITE", "SQLITE")) {
-    database_.setDatabaseName("/C:/Users/kuryga/CLionProjects/checkers_server/db.sqlite");
+    database_.setDatabaseName("/C:/players/kuryga/CLionProjects/checkers_server/db.sqlite");
     database_.open();
 }
 
@@ -20,21 +20,26 @@ QSqlQuery Database::MakeQuery(const QString& queryString) {
 }
 
 QSqlQuery Database::getPlayers(const QString& nickname) {
-    return MakeQuery("SELECT nickname, password, rating FROM users WHERE nickname = '" + nickname + "';");
+    return MakeQuery("SELECT nickname, password, rating, friends FROM players WHERE nickname = '" + nickname + "';");
 }
 
 void Database::addPlayer(const QString &nickname, const QString& password) {
-    MakeQuery("INSERT INTO users (nickname, password, rating) VALUES ('" + nickname + "', '" + password + "', 0);");
+    MakeQuery("INSERT INTO players (nickname, password, rating, friends) "
+              "VALUES ('" + nickname + "', '" + password + "', 0, '');");
 }
 
 void Database::changeNickname(const QString& oldNickname, const QString& newNickname) {
-    MakeQuery("UPDATE users SET nickname = '" + newNickname + "' WHERE nickname = '" + oldNickname + "';");
+    MakeQuery("UPDATE players SET nickname = '" + newNickname + "' WHERE nickname = '" + oldNickname + "';");
 }
 
 void Database::changePassword(const QString& nickname, const QString& newPassword) {
-    MakeQuery("UPDATE users SET password = '" + newPassword + "' WHERE nickname = '" + nickname + "';");
+    MakeQuery("UPDATE players SET password = '" + newPassword + "' WHERE nickname = '" + nickname + "';");
 }
 
 void Database::updateRating(const QString& nickname, int newRating) {
-    MakeQuery("UPDATE users SET rating = " + QString::number(newRating) + " WHERE nickname = '" + nickname + "';");
+    MakeQuery("UPDATE players SET rating = " + QString::number(newRating) + " WHERE nickname = '" + nickname + "';");
+}
+
+void Database::updateFriends(const QString& nickname, const QList<QString>& friendList) {
+    MakeQuery("UPDATE players SET friends = '" + friendList.join('$') + "' WHERE nickname = '" + nickname + "';");
 }

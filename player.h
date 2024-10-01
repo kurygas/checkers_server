@@ -10,13 +10,30 @@ class Player {
 public:
     explicit Player(QTcpSocket* playerCon);
 
-    void setNickname(const QString& nickname);
     void updateRating(int difference);
     void setRating(int rating);
     void addRatingForSearch(int rating);
     void clearRatingsForSearch();
     void setEnemy(QTcpSocket* enemy);
     QTcpSocket* getPlayerCon();
+
+    const QList<QString>& getFriends() const;
+
+    template<typename T>
+    void setNickname(T&& nickname) {
+        const QWriteLocker lock(&mutex_);
+        nickname_ = std::forward<T>(nickname);
+    }
+
+    template<typename T>
+    void setFriends(T&& friendList) {
+        friendList_ = std::forward<T>(friendList);
+    }
+
+    template<typename T>
+    void addFriend(T&& newFriend) {
+        friendList_.emplace_back(std::forward<T>(newFriend));
+    }
 
     QString getNickname() const;
     int getRating() const;
@@ -29,5 +46,6 @@ private:
     int rating_ = 0;
     QList<int> ratingsForSearch_;
     QTcpSocket* enemy_ = nullptr;
+    QStringList friendList_;
     mutable QReadWriteLock mutex_;
 };

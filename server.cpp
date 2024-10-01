@@ -1,7 +1,7 @@
 #include "server.h"
 
 Server::Server() {
-    listen(QHostAddress::Any, 8080);
+    listen(QHostAddress::AnyIPv4, 1234);
     connect(this, &QTcpServer::newConnection, this, &Server::meetPlayer);
 }
 

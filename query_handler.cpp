@@ -61,7 +61,14 @@ void QueryHandler::loginUser() {
             response.pushId(QueryId::Ok);
             const auto rating = users.value(2).toInt();
             response.pushInt(rating);
-            connectedPlayers_.loginPlayer(playerCon_, nickname, rating);
+            auto friendList = users.value(3).toString().split('$');
+            response.pushShort(static_cast<int>(friendList.size()));
+
+            for (const auto& friendNickname : friendList) {
+                response.pushString(friendNickname);
+            }
+
+            connectedPlayers_.loginPlayer(playerCon_, std::move(nickname), rating, std::move(friendList));
         }
         else {
             response.pushId(QueryId::WrongPassword);
@@ -90,13 +97,13 @@ void QueryHandler::registerUser() {
 }
 
 void QueryHandler::changeNickname() {
-    const auto newNickname = query_.getString(0);
+    auto newNickname = query_.getString(0);
     Query response(QueryId::ChangeNickname);
 
     if (!database_.getPlayers(newNickname).next()) {
         response.pushId(QueryId::Ok);
         database_.changeNickname(connectedPlayers_.getPlayerInfo(playerCon_)->getNickname(), newNickname);
-        connectedPlayers_.changeNickname(playerCon_, newNickname);
+        connectedPlayers_.changeNickname(playerCon_, std::move(newNickname));
     }
     else {
         response.pushId(QueryId::AlreadyExist);

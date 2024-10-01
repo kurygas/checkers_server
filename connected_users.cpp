@@ -1,17 +1,5 @@
 #include "connected_users.h"
 
-void ConnectedPlayers::loginPlayer(QTcpSocket* playerCon, const QString& nickname, int rating) {
-    const QReadLocker lock1(&playerMutex_);
-    const QWriteLocker lock2(&nicknamesMutex_);
-
-    if (players_.contains(playerCon)) {
-        const auto& player = players_[playerCon];
-        player->setNickname(nickname);
-        player->setRating(rating);
-        nicknames_[player->getNickname()] = playerCon;
-    }
-}
-
 void ConnectedPlayers::stopSearching(const QSharedPointer<Player>& player) {
     const QMutexLocker<QRecursiveMutex> lock(&matchmakingMutex_);
 
@@ -51,18 +39,6 @@ QTcpSocket* ConnectedPlayers::findGame(QTcpSocket* playerCon, int rating) {
     }
 
     return nullptr;
-}
-
-void ConnectedPlayers::changeNickname(QTcpSocket* playerCon, const QString& newNickname) {
-    const QReadLocker lock1(&playerMutex_);
-    const QWriteLocker lock2(&nicknamesMutex_);
-
-    if (players_.contains(playerCon)) {
-        const auto& player = players_[playerCon];
-        nicknames_.remove(player->getNickname());
-        nicknames_[newNickname] = playerCon;
-        players_[playerCon]->setNickname(newNickname);
-    }
 }
 
 QTcpSocket* ConnectedPlayers::disconnectPlayer(const QTcpSocket* playerCon) {

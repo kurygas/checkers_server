@@ -1,13 +1,8 @@
-#include "user.h"
+#include "player.h"
 
 QString Player::getNickname() const {
     const QReadLocker lock(&mutex_);
     return nickname_;
-}
-
-void Player::setNickname(const QString& nickname) {
-    const QWriteLocker lock(&mutex_);
-    nickname_ = nickname;
 }
 
 int Player::getRating() const {
@@ -60,4 +55,8 @@ Player::Player(QTcpSocket* playerCon)
 
 QTcpSocket* Player::getPlayerCon() {
     return con_;
+}
+
+const QList<QString>& Player::getFriends() const {
+    return friendList_;
 }
